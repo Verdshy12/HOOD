@@ -1,0 +1,20 @@
+node_modules/
+backups/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# Local development backups
+*.bak
+*.bak-*
+
+# Locally stored music (do not redistribute without permission)
+Files/Media/music/*.mp3
+
+# Large source archives
+assets/Terrain/grass_ground_4k.blend.zip

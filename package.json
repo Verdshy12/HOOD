@@ -1,0 +1,25 @@
+{
+  "name": "HOOD",
+  "version": "1.2.4",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.mjs",
+    "models:manifest": "node tools/model-manifest.mjs",
+    "vendor": "node tools/vendor-three.mjs",
+    "build:car": "node tools/optimize-car.mjs source/dodge/scene.gltf models/dodge.glb",
+    "build:tile": "node tools/build-tile.mjs source/nairobi-osm.json data/tiles/state-house.json --radius 600",
+    "test": "node tests/vehicle.test.mjs && node tests/world.test.mjs && node tests/core.test.mjs && node tests/meshes.test.mjs && node tests/carRig.test.mjs && node tests/carRig.test.mjs models/nissan_x_trail.glb 4.65 && node tests/carRig.test.mjs models/nissan_skyline_r34_gt-r.glb 4.65 skyline-r34 && node tests/modelManifest.test.mjs && node tests/drive.test.mjs && node tests/routes.test.mjs && node tests/sprint.test.mjs && node tests/persistence.test.mjs",
+    "build:routes": "node tools/build-routes.mjs data/tiles/state-house.json data/routes/real-road-v1.2.2.json"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "gl-matrix": "^3.4.4",
+    "meshoptimizer": "^1.3.0"
+  }
+}

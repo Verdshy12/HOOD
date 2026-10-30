@@ -1,0 +1,24 @@
+{
+  "models": [
+    {
+      "id": "2006-subaru-subaru-wrx-sti",
+      "name": "Subaru Wrx Sti",
+      "model": "./models/2006_subaru/subaru-wrx-sti.glb"
+    },
+    {
+      "id": "dodge",
+      "name": "Dodge",
+      "model": "./models/dodge.glb"
+    },
+    {
+      "id": "nissan-skyline-r34-gt-r",
+      "name": "Nissan Skyline R34 Gt R",
+      "model": "./models/nissan_skyline_r34_gt-r.glb"
+    },
+    {
+      "id": "nissan-x-trail",
+      "name": "Nissan X Trail",
+      "model": "./models/nissan_x_trail.glb"
+    }
+  ]
+}

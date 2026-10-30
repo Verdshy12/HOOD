@@ -1,0 +1,248 @@
+/* HOOD Radio — music/radio.css (v1.2.1)
+ * Every selector is prefixed .hood-radio / .hr- so it cannot collide with
+ * the game's own style.css. Colours match the existing HUD (cyan + nitro orange). */
+
+.hood-radio {
+  --hr-bg: #07131de8;
+  --hr-bg-solid: #0a1a26;
+  --hr-line: #20c8ff55;
+  --hr-cyan: #20c8ff;
+  --hr-text: #ffffff;
+  --hr-muted: #9fb3c2;
+  --hr-warn: #ffb347;
+  --hr-grad: linear-gradient(135deg, #ff7a18, #ffd23f);
+  font-family: Arial, sans-serif;
+  color: var(--hr-text);
+  pointer-events: none;           /* only the widget + panel catch the mouse */
+}
+
+.hood-radio [hidden] { display: none !important; }
+
+.hood-radio button,
+.hood-radio input { font-family: inherit; }
+
+/* ---------- Dashboard widget ---------- */
+.hr-widget {
+  position: fixed;
+  left: 16px;
+  bottom: 120px;                  /* same slot the old #radio-panel used */
+  width: 262px;
+  padding: 10px 12px 11px;
+  z-index: 3;
+  pointer-events: auto;
+  background: var(--hr-bg);
+  border: 1px solid var(--hr-line);
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  user-select: none;
+}
+
+.hr-top { display: flex; align-items: center; gap: 10px; }
+
+.hr-art {
+  position: relative;
+  flex: 0 0 46px;
+  height: 46px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--hr-grad);
+  display: grid;
+  place-items: center;
+  color: #05080c;
+  font-size: 20px;
+  font-weight: bold;
+}
+.hr-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.hr-meta { flex: 1; min-width: 0; }
+.hr-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 8px; letter-spacing: 2.5px; color: var(--hr-cyan); }
+.hr-title, .hr-artist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hr-title  { font-size: 13px; font-weight: bold; margin-top: 2px; }
+.hr-artist { font-size: 10px; color: var(--hr-muted); margin-top: 2px; }
+.hr-artist.is-status { color: var(--hr-warn); }
+
+/* Subtle animated visualizer (CSS only, runs while playing) */
+.hr-viz { display: flex; align-items: flex-end; gap: 2px; height: 10px; width: 20px; flex: 0 0 20px; }
+.hr-viz i {
+  flex: 1; height: 100%;
+  background: var(--hr-cyan);
+  border-radius: 1px;
+  transform-origin: bottom;
+  transform: scaleY(0.15);
+  animation: hr-bounce 0.9s ease-in-out infinite alternate;
+  animation-play-state: paused;
+  opacity: 0.85;
+}
+.hr-viz i:nth-child(2) { animation-duration: 0.7s;  animation-delay: -0.3s; }
+.hr-viz i:nth-child(3) { animation-duration: 1.1s;  animation-delay: -0.6s; }
+.hr-viz i:nth-child(4) { animation-duration: 0.8s;  animation-delay: -0.1s; }
+.hr-viz i:nth-child(5) { animation-duration: 1s;    animation-delay: -0.45s; }
+.hood-radio.is-playing .hr-viz i { animation-play-state: running; }
+@keyframes hr-bounce { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
+
+/* Progress */
+.hr-progress { display: flex; align-items: center; gap: 7px; margin-top: 9px; }
+.hr-time { font-size: 9px; color: var(--hr-muted); font-variant-numeric: tabular-nums; min-width: 26px; }
+.hr-time:last-child { text-align: right; }
+
+/* Controls row */
+.hr-controls { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+
+.hr-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex: 0 0 28px;
+  background: var(--hr-bg-solid);
+  color: var(--hr-cyan);
+  border: 1px solid var(--hr-line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.hr-btn svg { width: 14px; height: 14px; fill: currentColor; }
+.hr-btn:hover { background: #20c8ff22; border-color: var(--hr-cyan); }
+.hr-btn:focus-visible { outline: 2px solid var(--hr-cyan); outline-offset: 1px; }
+
+.hr-btn.hr-play { width: 34px; height: 34px; flex-basis: 34px; border-radius: 50%; border-color: var(--hr-cyan); }
+.hr-btn.hr-play svg { width: 16px; height: 16px; }
+.hood-radio.is-playing .hr-play,
+.hr-btn.hr-play:hover { background: var(--hr-cyan); color: #05080c; }
+
+.hood-radio.is-menu-open .hr-list { background: var(--hr-cyan); color: #05080c; }
+
+.hr-volume { flex: 1; min-width: 0; margin-left: 2px; }
+
+/* Shared range styling (seek + volume) */
+.hood-radio input[type="range"] {
+  --p: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.hr-seek { flex: 1; min-width: 0; }
+.hood-radio input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--hr-cyan) var(--p), #20c8ff2a var(--p));
+}
+.hood-radio input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: #20c8ff2a; }
+.hood-radio input[type="range"]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--hr-cyan); }
+.hood-radio input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 10px; height: 10px; margin-top: -3px;
+  border-radius: 50%; background: #fff; border: 0;
+}
+.hood-radio input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 0; }
+
+/* ---------- Playlist overlay ---------- */
+.hr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;                    /* above HUD (2-3), below the splash (1000) */
+  display: grid;
+  place-items: start center;      /* sits high so the car and road stay visible */
+  padding: 12vh 16px 16px;
+  pointer-events: none;           /* the road stays visible and driveable */
+}
+
+.hr-panel {
+  pointer-events: auto;
+  width: min(420px, 100%);
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
+  background: #07131df2;
+  border: 1px solid var(--hr-cyan);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.6), 0 0 0 1px #000;
+  animation: hr-pop 0.16s ease-out;
+  overflow: hidden;
+}
+@keyframes hr-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.hr-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; }
+.hr-panel-head h2 { margin: 0; font-size: 15px; letter-spacing: 3px; color: var(--hr-cyan); }
+.hr-count { margin: 3px 0 0; font-size: 10px; color: var(--hr-muted); }
+
+.hr-hint { margin: 0; padding: 4px 16px 10px; font-size: 11px; color: var(--hr-muted); }
+.hr-hint.is-warn { color: var(--hr-warn); }
+
+.hr-tracks { list-style: none; margin: 0; padding: 0 8px 6px; overflow-y: auto; flex: 1; overscroll-behavior: contain; }
+
+.hr-track {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 8px;
+  margin: 0 0 2px;
+  background: transparent;
+  color: var(--hr-text);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.hr-track:hover { background: #20c8ff14; }
+.hr-track:focus-visible { outline: 2px solid var(--hr-cyan); }
+.hr-track.is-current { background: #20c8ff1f; border-color: var(--hr-line); }
+.hr-track.is-missing { opacity: 0.5; }
+
+.hr-num { flex: 0 0 22px; text-align: center; font-size: 12px; color: var(--hr-muted); font-variant-numeric: tabular-nums; }
+.hr-track.is-current .hr-num { color: var(--hr-cyan); }
+.hr-track-text { flex: 1; min-width: 0; }
+.hr-track-title  { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hr-track-artist { font-size: 11px; color: var(--hr-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.hr-track-tag { flex: 0 0 auto; font-size: 10px; color: var(--hr-muted); font-variant-numeric: tabular-nums; }
+.hr-track.is-missing .hr-track-tag { color: var(--hr-warn); }
+
+.hr-empty { padding: 18px 12px 22px; font-size: 12px; line-height: 1.6; color: var(--hr-muted); text-align: center; }
+
+.hr-panel-foot { padding: 9px 16px 12px; font-size: 10px; letter-spacing: 0.5px; color: var(--hr-muted); border-top: 1px solid #20c8ff22; }
+.hr-panel-foot kbd { border: 1px solid var(--hr-line); border-radius: 4px; padding: 0 5px; color: #fff; font-family: inherit; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 600px) {
+  .hr-widget { width: 218px; bottom: 116px; left: 12px; padding: 9px 10px 10px; }
+  .hr-overlay { padding-top: 56px; }
+  .hr-panel { max-height: 58vh; }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .hr-widget {
+    top: auto;
+    right: auto;
+    bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    width: 132px;
+    max-width: calc(100vw - 24px);
+    padding: 5px 7px;
+    border-radius: 10px;
+    transform: translateX(-50%);
+  }
+
+  .hr-top { justify-content: center; gap: 0; }
+  .hr-art,
+  .hr-meta { display: none; }
+  .hr-progress { display: none; }
+  .hr-controls { justify-content: center; gap: 4px; margin: 0; }
+  .hr-controls .hr-prev,
+  .hr-controls .hr-next { display: grid; }
+  .hr-controls .hr-mute,
+  .hr-volume { display: none; }
+  .hr-btn { width: 24px; height: 28px; flex-basis: 24px; border-radius: 7px; }
+  .hr-btn.hr-play { width: 28px; height: 28px; flex-basis: 28px; }
+  .hr-btn.hr-play svg { width: 13px; height: 13px; }
+  .hr-btn.hr-list svg { width: 12px; height: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hr-viz i { animation: none; transform: scaleY(0.6); }
+  .hr-panel { animation: none; }
+}

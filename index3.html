@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>HOOD</title>
+  <style>
+    :root {
+      --bg-deep: #120a0a;
+      --bg-mid: #3d1e11;
+      --bg-glow: #e7863f;
+      --panel: rgba(14, 17, 20, 0.7);
+      --panel-strong: rgba(11, 16, 20, 0.84);
+      --line: rgba(255,255,255,0.18);
+      --text: #f8f0e7;
+      --muted: rgba(248,240,231,0.72);
+      --accent: #ffb347;
+      --accent-soft: rgba(255, 179, 71, 0.18);
+      --green: #6fe6a1;
+      --danger: #ff735f;
+      --shadow: rgba(0, 0, 0, 0.4);
+      --btn-shadow: 0 10px 30px rgba(255, 138, 66, 0.26);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    }
+
+    body {
+      overscroll-behavior: none;
+      user-select: none;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    #stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      isolation: isolate;
+      background: linear-gradient(180deg, #2a1208 0%, #7d3216 35%, #c4531c 62%, #f2a65a 80%, #5a2d14 80%, #2c160b 100%);
+    }
+
+    #stage::before {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      width: min(40vw, 40vh);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      right: 12%;
+      top: 40%;
+      transform: translateY(-50%);
+      background: #ffd98a;
+      box-shadow: 0 0 55px 24px rgba(255, 217, 138, 0.22), 0 0 150px 60px rgba(255, 150, 60, 0.16);
+    }
+
+    #stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent 60%, rgba(30, 12, 4, 0.12) 72%, rgba(20, 8, 3, 0.6) 100%), radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.38) 100%);
+    }
+
+    .top-line, .bottom-line {
+      position: absolute;
+      z-index: 4;
+      left: 5%;
+      right: 5%;
+      height: 1px;
+      background: rgba(255,255,255,0.2);
+      transform: scaleX(0);
+      animation: lineIn .7s .2s ease forwards;
+    }
+
+    .top-line { top: 8%; }
+    .bottom-line { bottom: 5%; }
+
+    .eyebrow, .edition {
+      position: absolute;
+      z-index: 5;
+      color: rgba(255,255,255,0.6);
+      font: 600 10px/1.4 Arial, sans-serif;
+      letter-spacing: 0.3em;
+      opacity: 0;
+      animation: fadeIn .6s .5s forwards;
+    }
+
+    .eyebrow { left: 5%; top: 4%; }
+    .edition { right: 5%; bottom: 2%; text-align: right; }
+
+    #title-window {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    #hood-title {
+      position: relative;
+      margin: 0;
+      color: #fcbf49;
+      font-size: clamp(130px, 29vw, 440px);
+      line-height: .78;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      white-space: nowrap;
+      clip-path: inset(0 0 0 100%);
+      text-shadow: 0 3px 0 rgba(42,18,8,.7), 0 18px 60px rgba(0,0,0,.45);
+    }
+
+    #bl { display: inline-block; width: 0; height: 0; }
+
+    #scene {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+
+    #scene canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #loading {
+      position: absolute;
+      z-index: 10;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,.8);
+      font: 11px Arial, sans-serif;
+      letter-spacing: .2em;
+      text-align: center;
+      max-width: 90%;
+      transition: opacity .5s;
+    }
+
+    #loading.hidden { opacity: 0; pointer-events: none; }
+
+    #ui-shell {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+
+    .screen {
+      display: none;
+      width: min(100%, 720px);
+      padding: clamp(18px, 4vw, 34px);
+      pointer-events: auto;
+    }
+
+    .screen.active {
+      display: block;
+      animation: floatIn .35s ease;
+    }
+
+    .panel {
+      position: relative;
+      background: linear-gradient(180deg, rgba(18, 17, 20, 0.65), rgba(11, 16, 20, 0.8));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 26px 80px rgba(0,0,0,0.3);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    #intro-screen .panel {
+      padding: clamp(28px, 4vw, 48px) clamp(22px, 4vw, 42px);
+      text-align: center;
+    }
+
+    .eyebrow-tag {
+      display: inline-block;
+      margin-bottom: 12px;
+      color: var(--accent);
+      font: 600 12px/1.1 Arial, sans-serif;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+    }
+
+    .intro-title {
+      margin: 0 0 14px;
+      font-size: clamp(2.6rem, 7vw, 6rem);
+      line-height: .9;
+      letter-spacing: -0.06em;
+      color: #f8f2ec;
+      text-shadow: 0 18px 40px rgba(0, 0, 0, .28);
+    }
+
+    .intro-copy {
+      margin: 0 auto 28px;
+      width: min(90%, 420px);
+      color: var(--muted);
+      font: 600 13px/1.6 Arial, sans-serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .small-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(255, 179, 71, 0.18), rgba(255, 138, 66, 0.12));
+      color: var(--text);
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, opacity .18s ease;
+      box-shadow: var(--btn-shadow);
+      touch-action: manipulation;
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .small-btn:hover { transform: translateY(-1px); }
+
+    .primary-btn:active,
+    .secondary-btn:active,
+    .small-btn:active { transform: translateY(0); }
+
+    .primary-btn {
+      min-width: min(70vw, 280px);
+      min-height: 56px;
+      padding: 12px 26px;
+      border-radius: 14px;
+      font: 800 14px/1 Arial, sans-serif;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      border-color: rgba(255, 183, 71, 0.7);
+      background: linear-gradient(180deg, #ffbf5c, #d0721d);
+      color: #1c1208;
+    }
+
+    .secondary-btn {
+      min-height: 48px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font: 700 12px/1 Arial, sans-serif;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+    }
+
+    #setup-screen .panel {
+      padding: clamp(18px, 3vw, 28px);
+    }
+
+    .setup-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .setup-head h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 4vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 92px;
+      min-height: 30px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font: 600 10px/1 Arial, sans-serif;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+    }
+
+    .badge:hover {
+      border-color: rgba(255, 179, 71, 0.8);
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+
+    .badge:active { transform: scale(.97); }
+
+    .badge:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .field-label {
+      display: block;
+      margin: 10px 0 12px;
+      color: var(--muted);
+      font: 700 11px/1.2 Arial, sans-serif;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+
+    .route-select {
+      width: 100%;
+      min-height: 46px;
+      padding: 0 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 12px;
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      font: 600 13px/1.2 Arial, sans-serif;
+      letter-spacing: .04em;
+    }
+
+    .route-select option { color: #111; }
+
+    .mode-grid,
+    .car-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .mode-option,
+    .car-option {
+      position: relative;
+      display: block;
+      cursor: pointer;
+    }
+
+    .mode-option input,
+    .car-option input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-card,
+    .car-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      min-height: 80px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      transition: border-color .15s ease, background .15s ease, transform .15s ease;
+    }
+
+    .mode-option input:checked + .mode-card,
+    .car-option input:checked + .car-card {
+      border-color: rgba(255, 179, 71, 0.8);
+      background: rgba(255, 179, 71, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 179, 71, 0.24);
+    }
+
+    .mode-card strong,
+    .car-card strong {
+      display: block;
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      line-height: 1.1;
+    }
+
+    .mode-card small,
+    .car-card small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font: 600 11px/1.3 Arial, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .mode-dot,
+    .car-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.55);
+      background: transparent;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .mode-option input:checked + .mode-card .mode-dot,
+    .car-option input:checked + .car-card .car-dot {
+      border-color: var(--accent);
+      background: radial-gradient(circle, var(--accent) 0 38%, transparent 42%);
+    }
+
+    .car-card {
+      min-height: 110px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .car-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .car-icon {
+      width: 70px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,179,71,0.22));
+      border: 1px solid rgba(255,255,255,0.12);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .car-icon::before,
+    .car-icon::after {
+      content: "";
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      bottom: 8px;
+      border-radius: 50%;
+      background: rgba(10, 12, 14, 0.9);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .car-icon::before { left: 12px; }
+    .car-icon::after { right: 12px; }
+
+    .car-icon::selection { background: transparent; }
+
+    .brand-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 18px 0 4px;
+      padding: 12px 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.02);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+
+    .brand-strip[hidden] { display: none; }
+
+    .brand-logo {
+      width: min(46vw, 200px);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 16px 30px rgba(0,0,0,.26));
+    }
+
+    .cta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .cta-row > * { flex: 1; }
+
+    .device-note {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.1);
+      color: var(--muted);
+      font: 600 11px/1.5 Arial, sans-serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .screen.hidden {
+      display: none !important;
+    }
+
+    #brand-splash[hidden] { display: none; }
+
+    #brand-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: #0b2135;
+    }
+
+    .splash-logo-stage {
+      position: relative;
+      width: min(72vw, 340px);
+      height: min(72vw, 340px);
+    }
+
+    .splash-logo-stage img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .splash-icon {
+      opacity: 0;
+      animation: iconIntro 2.2s cubic-bezier(.22, 1, .36, 1) .2s forwards;
+    }
+
+    .splash-full-logo {
+      opacity: 0;
+      animation: fullLogoReveal 2.6s cubic-bezier(.22, 1, .36, 1) 1.7s forwards;
+    }
+
+    #orientation-notice { display: none; }
+
+    @keyframes iconIntro {
+      0% { opacity: 0; transform: scale(.5) translateY(20px); filter: drop-shadow(0 0 0 rgba(240,84,72,0)); }
+      45% { opacity: 1; transform: scale(.72) translateY(0); filter: drop-shadow(0 0 25px rgba(240,84,72,.45)); }
+      75% { opacity: 1; transform: scale(.68); }
+      100% { opacity: 0; transform: scale(.52) translateY(-18px); }
+    }
+
+    @keyframes fullLogoReveal {
+      0% { opacity: 0; transform: scale(.92); filter: drop-shadow(0 0 0 rgba(240,84,72,0)); }
+      35% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 30px rgba(240,84,72,.35)); }
+      100% { opacity: 1; transform: scale(1.03); filter: drop-shadow(0 0 15px rgba(240,84,72,.15)); }
+    }
+
+    @keyframes lineIn { to { transform: scaleX(1); } }
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes floatIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 720px), (pointer: coarse) {
+      .screen {
+        width: min(100%, 560px);
+        padding: 12px;
+      }
+
+      .setup-head {
+        margin-bottom: 12px;
+      }
+
+      .mode-grid,
+      .car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+      .mode-card,
+      .car-card {
+        min-height: 72px;
+      }
+
+      .car-card {
+        min-height: 90px;
+      }
+
+      .brand-strip {
+        margin-top: 12px;
+      }
+
+      .device-note {
+        letter-spacing: 0.08em;
+      }
+    }
+
+    @media (orientation: landscape) {
+      body.mobile-layout #ui-shell { place-items: stretch; }
+      body.mobile-layout #setup-screen { width: 100%; height: 100%; padding: 8px; }
+      body.mobile-layout #setup-screen .panel {
+        width: min(100%, 900px);
+        max-height: 100%;
+        margin: 0 auto;
+        padding: 12px 16px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+      body.mobile-layout .setup-head {
+        position: sticky;
+        top: -12px;
+        z-index: 2;
+        margin: -12px -16px 8px;
+        padding: 10px 16px 8px;
+        background: rgba(13, 16, 19, .96);
+        backdrop-filter: blur(10px);
+      }
+      body.mobile-layout .setup-head h2 { font-size: 1.4rem; }
+      body.mobile-layout .badge { min-width: 92px; min-height: 42px; }
+      body.mobile-layout .field-label { margin: 8px 0 6px; }
+      body.mobile-layout .mode-grid, body.mobile-layout .car-grid { gap: 7px; }
+      body.mobile-layout .mode-card, body.mobile-layout .car-card { min-height: 54px; padding: 8px 10px; border-radius: 10px; }
+      body.mobile-layout .car-card { min-height: 60px; }
+      body.mobile-layout .car-icon { width: 48px; height: 32px; }
+      body.mobile-layout .car-icon::before, body.mobile-layout .car-icon::after { width: 9px; height: 9px; bottom: 5px; }
+      body.mobile-layout .car-icon::before { left: 7px; }
+      body.mobile-layout .car-icon::after { right: 7px; }
+      body.mobile-layout .route-select { min-height: 38px; }
+      body.mobile-layout .brand-strip, body.mobile-layout .device-note { display: none; }
+      body.mobile-layout .cta-row { display: none; }
+    }
+
+    @media (orientation: portrait) {
+      body.mobile-layout #setup-screen { visibility: hidden; }
+      body.mobile-layout #orientation-notice {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 12px;
+        padding: 28px;
+        background: #05080c;
+        color: var(--text);
+        text-align: center;
+        font: 600 14px/1.6 Arial, sans-serif;
+      }
+      body.mobile-layout #orientation-notice strong {
+        color: var(--accent);
+        font: 900 24px/1 Impact, sans-serif;
+        letter-spacing: .08em;
+      }
+      body.mobile-layout .rotate-mark { font-size: 40px; transform: rotate(90deg); }
+    }
+
+    @media (pointer: coarse) {
+      .primary-btn,
+      .secondary-btn,
+      .small-btn {
+        min-height: 52px;
+      }
+    }
+  </style>
+  <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+</head>
+<body>
+  <main id="stage">
+    <div class="top-line"></div>
+    <div class="bottom-line"></div>
+    <div id="title-window"><h1 id="hood-title">HOOD<span id="bl"></span></h1></div>
+    <div id="scene"></div>
+    <div id="loading">LOADING</div>
+
+    <div id="ui-shell">
+      <section id="intro-screen" class="screen active" aria-live="polite">
+        <div class="panel">
+          <div class="eyebrow-tag">HOOD</div>
+          <h2 class="intro-title">READY TO PLAY</h2>
+          <p class="intro-copy">Choose your mode, car, and drive.</p>
+          <button id="startBtn" class="primary-btn" type="button">Start</button>
+        </div>
+      </section>
+
+      <section id="setup-screen" class="screen" aria-live="polite">
+        <div class="panel">
+          <div class="setup-head">
+            <h2>Prepare</h2>
+            <button id="brandToggle" class="badge" type="button" aria-controls="brand-strip" aria-expanded="false" aria-label="Show Novatrix Media logo">HOOD</button>
+          </div>
+
+          <label class="field-label">Select Mode</label>
+          <div id="mode-group" class="mode-grid">
+            <label class="mode-option">
+              <input type="radio" name="mode" value="free-drive" checked>
+              <span class="mode-card">
+                <span>
+                  <strong>Free Drive</strong>
+                  <small>Explore &amp; Cruise</small>
+                </span>
+                <span class="mode-dot" aria-hidden="true"></span>
+              </span>
+            </label>
+
+            <label class="mode-option">
+              <input type="radio" name="mode" value="race">
+              <span class="mode-card">
+                <span>
+                  <strong>Sprint Race</strong>
+                  <small>Race through checkpoints</small>
+                </span>
+                <span class="mode-dot" aria-hidden="true"></span>
+              </span>
+            </label>
+          </div>
+
+          <label class="field-label" for="route-choice">Select Route</label>
+          <select id="route-choice" class="route-select" name="route">
+            <option value="state-house-eastbound">State House Avenue · Eastbound</option>
+            <option value="state-house-westbound">Nairobi Gallery · Westbound</option>
+            <option value="nairobi-ngara-sprint">Ngara to Kinyanjui Street · Sprint</option>
+          </select>
+
+          <label class="field-label">Select Car</label>
+          <div class="car-grid" id="car-list">
+            <label class="car-option">
+              <input type="radio" name="car" value="subaru" checked>
+              <span class="car-card">
+                <span class="car-meta">
+                  <strong>Subaru WRX</strong>
+                  <small>Turbo AWD</small>
+                </span>
+                <span class="car-icon" aria-hidden="true"></span>
+                <span class="car-dot" aria-hidden="true"></span>
+              </span>
+            </label>
+
+            <label class="car-option">
+              <input type="radio" name="car" value="dodge">
+              <span class="car-card">
+                <span class="car-meta">
+                  <strong>Dodge Challenger R/T</strong>
+                  <small>V8 Muscle</small>
+                </span>
+                <span class="car-icon" aria-hidden="true"></span>
+                <span class="car-dot" aria-hidden="true"></span>
+              </span>
+            </label>
+
+            <label class="car-option">
+              <input type="radio" name="car" value="nissan_x_trail">
+              <span class="car-card">
+                <span class="car-meta">
+                  <strong>Nissan X Trail</strong>
+                  <small>All-wheel drive</small>
+                </span>
+                <span class="car-icon" aria-hidden="true"></span>
+                <span class="car-dot" aria-hidden="true"></span>
+              </span>
+            </label>
+
+            <label class="car-option">
+              <input type="radio" name="car" value="nissan-skyline-r34-gt-r">
+              <span class="car-card">
+                <span class="car-meta">
+                  <strong>Nissan Skyline R34 GT-R</strong>
+                  <small>Performance coupe</small>
+                </span>
+                <span class="car-icon" aria-hidden="true"></span>
+                <span class="car-dot" aria-hidden="true"></span>
+              </span>
+            </label>
+          </div>
+
+          <div id="brand-strip" class="brand-strip" aria-label="Novatrix Media logo" hidden>
+            <img id="brand-logo" class="brand-logo" alt="Novatrix Media" data-src="Files/splash/novatrix-2.png">
+          </div>
+
+          <div class="cta-row">
+            <button id="backBtn" class="secondary-btn" type="button">Back</button>
+            <button id="driveBtn" class="primary-btn" type="button">Drive</button>
+          </div>
+
+          <div class="device-note">Mobile: tilt steering enabled · camera toggles stay in cockpit</div>
+        </div>
+      </section>
+    </div>
+
+    <div id="orientation-notice" role="status" aria-live="polite">
+      <span class="rotate-mark" aria-hidden="true">▱</span>
+      <strong>ROTATE YOUR DEVICE</strong>
+      <span>HOOD setup and driving are designed for landscape.</span>
+    </div>
+
+    <div id="brand-splash" aria-hidden="true" hidden>
+      <div class="splash-logo-stage">
+        <img class="splash-icon" src="Files/splash/novatrix.png" alt="">
+        <img class="splash-full-logo" src="Files/splash/novatrix-2.png" alt="">
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+    const CONFIG = {
+      modelPath: './models/2006_subaru/subaru-wrx-sti.glb',
+      duration: 8,
+      passStart: 0.5,
+      passEnd: 6.0,
+      cameraFov: 35,
+      carYaw: -Math.PI / 2,
+      carScreenWidth: 0.62,
+      carContact: 0.87,
+      titleBaseline: 0.845,
+      wheelSpin: 8,
+      exhaust: { x: 0.5, y: 0.3, z: 0.25 },
+      audioPath: ''
+    };
+
+    const introScreen = document.getElementById('intro-screen');
+    const setupScreen = document.getElementById('setup-screen');
+    const startBtn = document.getElementById('startBtn');
+    const backBtn = document.getElementById('backBtn');
+    const driveBtn = document.getElementById('driveBtn');
+    const brandToggle = document.getElementById('brandToggle');
+    const brandStrip = document.getElementById('brand-strip');
+    const brandLogo = document.getElementById('brand-logo');
+    const brandSplash = document.getElementById('brand-splash');
+    const routeChoice = document.getElementById('route-choice');
+    const modeInputs = [...document.querySelectorAll('input[name="mode"]')];
+    const carInputs = [...document.querySelectorAll('input[name="car"]')];
+    const host = document.querySelector('#scene');
+    const title = document.querySelector('#hood-title');
+    const baseMarker = document.querySelector('#bl');
+    const loading = document.querySelector('#loading');
+
+    let currentScreen = 'intro';
+    const mobileQuery = window.matchMedia('(max-width: 720px), (pointer: coarse)');
+    const isMobile = () => mobileQuery.matches;
+    const updateMobileLayout = () => document.body.classList.toggle('mobile-layout', isMobile());
+
+    function setScreen(name) {
+      currentScreen = name;
+      introScreen.classList.toggle('active', name === 'intro');
+      setupScreen.classList.toggle('active', name === 'setup');
+    }
+
+    function getSelectedMode() {
+      const selected = modeInputs.find((input) => input.checked);
+      return selected ? selected.value : 'free-drive';
+    }
+
+    function getSelectedCar() {
+      const selected = carInputs.find((input) => input.checked);
+      return selected ? selected.value : 'subaru';
+    }
+
+    function setMode(mode) {
+      const option = modeInputs.find((input) => input.value === mode);
+      if (option) option.checked = true;
+    }
+
+    modeInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        if (input.value === 'race') routeChoice.value = 'nairobi-ngara-sprint';
+        else if (routeChoice.value === 'nairobi-ngara-sprint') routeChoice.value = 'state-house-eastbound';
+      });
+    });
+
+    routeChoice.addEventListener('change', () => {
+      setMode(routeChoice.value === 'nairobi-ngara-sprint' ? 'race' : 'free-drive');
+    });
+
+    brandToggle.addEventListener('click', () => {
+      if (isMobile()) {
+        launchGame();
+        return;
+      }
+      const showLogo = brandStrip.hidden;
+      if (showLogo && !brandLogo.hasAttribute('src')) {
+        brandLogo.src = brandLogo.dataset.src;
+      }
+      brandStrip.hidden = !showLogo;
+      brandToggle.setAttribute('aria-expanded', String(showLogo));
+      brandToggle.setAttribute('aria-label', showLogo ? 'Hide Novatrix Media logo' : 'Show Novatrix Media logo');
+    });
+
+    function launchGame() {
+      driveBtn.disabled = true;
+      brandToggle.disabled = true;
+      brandSplash.hidden = false;
+      brandSplash.setAttribute('aria-hidden', 'false');
+
+      const destination = new URL('./index.html', window.location.href);
+      destination.search = new URLSearchParams({
+        route: routeChoice.value,
+        car: getSelectedCar(),
+        mode: getSelectedMode(),
+        autostart: '1',
+        hoodFlow: '1'
+      }).toString();
+      window.setTimeout(() => window.location.assign(destination.href), 4400);
+    }
+
+    let pickerBuffer = '';
+    window.addEventListener('keydown', (event) => {
+      if (event.key.length !== 1) return;
+      pickerBuffer = (pickerBuffer + event.key.toLowerCase()).slice(-6);
+      if (pickerBuffer === 'picker') launchGame();
+    });
+
+    startBtn.addEventListener('click', () => {
+      setScreen('setup');
+    });
+
+    backBtn.addEventListener('click', () => {
+      setScreen('intro');
+    });
+
+    driveBtn.addEventListener('click', launchGame);
+
+    updateMobileLayout();
+    mobileQuery.addEventListener('change', updateMobileLayout);
+    window.addEventListener('resize', updateMobileLayout);
+    window.addEventListener('orientationchange', updateMobileLayout);
+
+    if (isMobile()) {
+      startBtn.textContent = 'Start';
+      driveBtn.textContent = 'Start Driving';
+    }
+
+
+    let carRoot = null, mixer = null, wheelNodes = [], carLength = 4.6, carHeight = 1.45, carLoaded = false;
+    let visW = 8, startX = 8, endX = -8, titleLeft = 0, titleWidth = 1;
+    let startTime = 0, prevTime = 0, raf = 0, finished = false, spawnAcc = 0, audio = null;
+    const wheelBase = new Map(), smoke = [];
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(CONFIG.cameraFov, innerWidth / innerHeight, .1, 150);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    host.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xffe2c4, 0x2a1208, 1.6));
+    const key = new THREE.DirectionalLight(0xffe6cf, 3);
+    key.position.set(-4, 9, 7);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    Object.assign(key.shadow.camera, { left: -14, right: 14, top: 8, bottom: -8 });
+    scene.add(key);
+
+    const rim = new THREE.DirectionalLight(0xffa860, 2);
+    rim.position.set(6, 5, -8);
+    scene.add(rim);
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 60), new THREE.ShadowMaterial({ opacity: .4 }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const smokeTex = (() => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 128;
+      const x = c.getContext('2d');
+      const g = x.createRadialGradient(64, 64, 2, 64, 64, 62);
+      g.addColorStop(0, 'rgba(225,230,233,.72)');
+      g.addColorStop(.3, 'rgba(185,192,198,.42)');
+      g.addColorStop(.62, 'rgba(115,125,132,.17)');
+      g.addColorStop(1, 'rgba(70,75,80,0)');
+      x.fillStyle = g;
+      x.fillRect(0, 0, 128, 128);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    })();
+
+    for (let i = 0; i < 90; i++) {
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: 0xd4d8dc, transparent: true, opacity: 0, depthWrite: false }));
+      sprite.visible = false;
+      scene.add(sprite);
+      smoke.push({ sprite, age: 0, life: 1, active: false, vx: 0, vy: 0, vz: 0, size: .5 });
+    }
+
+    function spawnSmoke() {
+      const p = smoke.find((q) => !q.active);
+      if (!p) return;
+      const k = carLength / 4.6;
+      const e = CONFIG.exhaust;
+      carRoot.updateMatrixWorld(true);
+      p.sprite.position.set(e.x * carLength, e.y, e.z).applyMatrix4(carRoot.matrixWorld);
+      Object.assign(p, {
+        active: true,
+        age: 0,
+        life: 1.2 + Math.random() * .9,
+        size: (.3 + Math.random() * .35) * k,
+        vx: (1 + Math.random() * 1.4) * k,
+        vy: (.3 + Math.random() * .6) * k,
+        vz: (Math.random() - .5) * .4
+      });
+      p.sprite.visible = true;
+      p.sprite.scale.set(p.size, p.size, 1);
+    }
+
+    function updateSmoke(dt, emitting) {
+      if (emitting) {
+        spawnAcc += dt;
+        while (spawnAcc > .035) {
+          spawnSmoke();
+          spawnAcc -= .035;
+        }
+      }
+      for (const p of smoke) {
+        if (!p.active) continue;
+        p.age += dt;
+        const f = p.age / p.life;
+        if (f >= 1) {
+          p.active = false;
+          p.sprite.visible = false;
+          continue;
+        }
+        p.sprite.position.x += p.vx * dt;
+        p.sprite.position.y += p.vy * dt;
+        p.sprite.position.z += p.vz * dt;
+        const s = p.size * (1 + f * 3);
+        p.sprite.scale.set(s, s, 1);
+        p.sprite.material.opacity = .5 * Math.min(f * 5, 1) * Math.pow(1 - f, 1.4);
+      }
+    }
+
+    function layout() {
+      const W = innerWidth, H = innerHeight, tanH = Math.tan(THREE.MathUtils.degToRad(CONFIG.cameraFov / 2));
+      camera.aspect = W / H;
+      visW = carLength / CONFIG.carScreenWidth;
+      const d = visW / (2 * tanH * camera.aspect);
+      const camY = (2 * CONFIG.carContact - 1) * d * tanH;
+      camera.position.set(0, camY, d);
+      camera.lookAt(0, camY, 0);
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setSize(W, H);
+      startX = visW / 2 + carLength * .6;
+      endX = -startX;
+
+      const carPx = carHeight / (2 * d * tanH) * H;
+      title.style.fontSize = Math.min(carPx * 1.05 / .75, W * .34, H * .55) + 'px';
+      title.style.top = '0px';
+      const baseNow = title.offsetTop + baseMarker.offsetTop;
+      title.style.top = (H * CONFIG.titleBaseline - baseNow) + 'px';
+      titleLeft = title.offsetLeft;
+      titleWidth = title.offsetWidth;
+    }
+
+    const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+    const sizeOf = (o) => {
+      const b = new THREE.Box3().setFromObject(o);
+      const s = new THREE.Vector3();
+      b.getSize(s);
+      return { b, s };
+    };
+
+    function prepareModel(model, animations) {
+      const o = sizeOf(model), longest = Math.max(o.s.x, o.s.y, o.s.z);
+      if (!isFinite(longest) || longest <= 0) throw new Error('The Subaru model has no measurable geometry.');
+      model.scale.multiplyScalar(4.6 / longest);
+      let m = sizeOf(model);
+      model.position.x -= (m.b.min.x + m.b.max.x) / 2;
+      model.position.y -= m.b.min.y;
+      model.position.z -= (m.b.min.z + m.b.max.z) / 2;
+      model.rotation.y = CONFIG.carYaw;
+      carRoot = new THREE.Group();
+      carRoot.add(model);
+      scene.add(carRoot);
+      m = sizeOf(carRoot);
+      carLength = Math.max(m.s.x, m.s.z);
+      carHeight = m.s.y;
+
+      carRoot.traverse((obj) => {
+        if (!obj.isMesh) return;
+        obj.castShadow = obj.receiveShadow = true;
+        for (const mat of [].concat(obj.material)) {
+          if (!mat) continue;
+          if ('roughness' in mat) mat.roughness = Math.min(mat.roughness, .62);
+          if ('metalness' in mat) mat.metalness = Math.max(mat.metalness, .08);
+        }
+        if (/wheel|tyre|tire|rim/i.test(obj.name)) {
+          wheelNodes.push(obj);
+          wheelBase.set(obj, obj.rotation.x);
+        }
+      });
+
+      if (animations.length) {
+        mixer = new THREE.AnimationMixer(model);
+        animations.forEach((clip) => mixer.clipAction(clip).play());
+      }
+
+      carRoot.position.set(startX, 0, 0);
+      carLoaded = true;
+      loading.classList.add('hidden');
+      layout();
+    }
+
+    const smooth = (a, b, v) => {
+      const t = THREE.MathUtils.clamp((v - a) / (b - a), 0, 1);
+      return t * t * (3 - 2 * t);
+    };
+
+    function setReveal(carX) {
+      const edgePx = innerWidth * (.5 + (carX + carLength * .4) / visW);
+      const left = THREE.MathUtils.clamp((edgePx - titleLeft) / titleWidth, 0, 1) * 100;
+      title.style.clipPath = `inset(-20% 0 -20% ${left}%)`;
+    }
+
+    function startSequence() {
+      cancelAnimationFrame(raf);
+      startTime = performance.now();
+      prevTime = 0;
+      finished = false;
+      spawnAcc = 0;
+      for (const p of smoke) {
+        p.active = false;
+        p.sprite.visible = false;
+      }
+      if (carRoot) {
+        carRoot.position.set(startX, 0, 0);
+        carRoot.rotation.set(0, 0, 0);
+      }
+      for (const w of wheelNodes) w.rotation.x = wheelBase.get(w) ?? 0;
+      title.style.clipPath = 'inset(0 0 0 100%)';
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      }
+      raf = requestAnimationFrame(animate);
+    }
+
+    function animate(now) {
+      raf = requestAnimationFrame(animate);
+      const t = (now - startTime) / 1000;
+      const dt = prevTime ? Math.min((now - prevTime) / 1000, .04) : 0;
+      prevTime = now;
+
+      if (carLoaded) {
+        const p = THREE.MathUtils.clamp((t - CONFIG.passStart) / (CONFIG.passEnd - CONFIG.passStart), 0, 1);
+        const mix = p * .75 + smooth(0, 1, p) * .25;
+        const x = startX + (endX - startX) * mix;
+        const driving = p > 0 && p < 1;
+        const str = driving ? 1 : 0;
+        carRoot.position.x = x;
+        carRoot.position.y = Math.abs(Math.sin(t * 18) * .018) * str;
+        carRoot.rotation.z = Math.sin(t * 8) * .006 * str;
+        for (const w of wheelNodes) w.rotation.x = (wheelBase.get(w) ?? 0) - t * CONFIG.wheelSpin * str;
+        mixer?.update(dt);
+        updateSmoke(dt, driving && x < visW / 2 + carLength * .3);
+        setReveal(x);
+        if (t >= CONFIG.duration && !finished) {
+          finished = true;
+          title.style.clipPath = 'inset(-20% 0 -20% 0)';
+          window.dispatchEvent(new Event('hood:intro-complete'));
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    if (CONFIG.audioPath.trim()) {
+      audio = new Audio(CONFIG.audioPath);
+      audio.volume = .55;
+    }
+
+    addEventListener('resize', layout);
+    layout();
+    renderer.render(scene, camera);
+
+    loader.load(
+      CONFIG.modelPath,
+      (gltf) => {
+        try {
+          prepareModel(gltf.scene, gltf.animations || []);
+          startSequence();
+        } catch (e) {
+          loading.textContent = 'UNABLE TO LOAD CAR: ' + e.message;
+          loading.classList.remove('hidden');
+          console.error(e);
+        }
+      },
+      (ev) => {
+        if (ev.total > 0) loading.textContent = `PREPARING THE MACHINE... ${Math.round(ev.loaded / ev.total * 100)}%`;
+      },
+      (err) => {
+        console.error(err);
+        loading.textContent = 'UNABLE TO LOAD CAR: CHECK MODEL PATH';
+        loading.classList.remove('hidden');
+      }
+    );
+  </script>
+</body>
+</html>

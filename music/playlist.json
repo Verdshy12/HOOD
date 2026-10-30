@@ -1,0 +1,49 @@
+{
+  "tracks": [
+    {
+      "title": "Staki",
+      "artist": "Femi One & Domani Munga",
+      "file": "Femi_One_Domani_Staki.mp3"
+    },
+    {
+      "title": "Habari",
+      "artist": "Kitu Sewer & Edu",
+      "file": "HAbari.mp3"
+    },
+     {
+      "title": "Exponential Potential",
+      "artist": "Juliani",
+      "file": "expon.mp3"
+    },
+     {
+      "title": "Muhuni",
+      "artist": "Kaa La Moto x Femi One x Brown Mkamanda",
+      "file": "muhuni.mp3"
+    },
+    {
+      "title": "Rong Cypher 2.0",
+      "artist": "Wakadinali x Kitu Sewer Ft Various Artists",
+      "file": "vol2.mp3"
+    },
+    {
+      "title": "Carribean Connect 002",
+      "artist": "Dj Andie",
+      "file": "Dj_Andie.mp3"
+    },
+    {
+      "title": "Kijana Good Job",
+      "artist": "Sewersydda & Munga",
+      "file": "Mkadinali.mp3"
+    },
+    {
+      "title": "Waliniambia",
+      "artist": "Sewersydda & Kitu Sewer",
+      "file": "Waliniambia.mp3"
+    },
+    {
+      "title": "High Noon",
+      "artist": "Abbas Kubaff X Khaligraph Jones X Wakadinali",
+      "file": "High_noon.mp3"
+    }
+  ]
+}

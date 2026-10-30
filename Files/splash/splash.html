@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novatrix Media — HOOD</title>
+  <link rel="stylesheet" href="splash.css">
+  <style>
+    /* ---------- Session setup (car / route / mode) ----------
+       Scoped to #setup-screen so it can't disturb the intro or menu screens.
+       Colours follow the overlay background (#0b2135); change --hood-accent to taste. */
+    #setup-screen {
+      --hood-bg: #0b2135;
+      --hood-panel: rgba(255, 255, 255, 0.05);
+      --hood-line: rgba(255, 255, 255, 0.22);
+      --hood-text: #f2f6fa;
+      --hood-dim: rgba(242, 246, 250, 0.68);
+      --hood-accent: #ffb347;
+      overflow-y: auto;            /* tall form must scroll on short screens */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #setup-screen .game-container {
+      width: 100%;
+      max-width: 460px;
+      max-height: 100%;
+      margin: auto;                /* centres when short, scrolls when tall */
+      padding: 28px 22px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    #setup-screen .session-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 26px 24px 20px;
+      background: var(--hood-panel);
+      border: 1px solid var(--hood-line);
+      border-radius: 14px;
+      color: var(--hood-text);
+      text-align: left;
+      backdrop-filter: blur(6px);
+    }
+
+    #setup-screen .session-eyebrow {
+      margin: 0 0 4px;
+      font-size: 0.75rem;
+      letter-spacing: 0.4em;
+      color: var(--hood-accent);
+    }
+
+    #setup-screen #setup-title {
+      margin: 0 0 6px;
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      line-height: 1.1;
+    }
+
+    #setup-screen .session-intro {
+      margin: 0 0 20px;
+      font-size: 0.9rem;
+      color: var(--hood-dim);
+    }
+
+    /* Field labels */
+    #setup-screen .session-card > label,
+    #setup-screen #sprint-route-field > label,
+    #setup-screen #mode-label {
+      display: block;
+      margin: 0 0 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--hood-dim);
+    }
+
+    /* Dropdowns */
+    #setup-screen select {
+      width: 100%;
+      margin: 0 0 18px;
+      min-height: 46px;
+      padding: 12px 40px 12px 14px;
+      box-sizing: border-box;
+      font: inherit;
+      font-size: 1rem;
+      color: var(--hood-text);
+      background-color: rgba(0, 0, 0, 0.3);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      border: 1px solid var(--hood-line);
+      border-radius: 8px;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    #setup-screen select:hover { border-color: rgba(255, 255, 255, 0.4); }
+    #setup-screen select:focus-visible {
+      outline: 2px solid var(--hood-accent);
+      outline-offset: 2px;
+    }
+    #setup-screen select option {
+      background: var(--hood-bg);
+      color: var(--hood-text);
+    }
+
+    /* Mode cards */
+    #setup-screen .mode-options {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 22px;
+    }
+    #setup-screen .mode-option {
+      position: relative;
+      display: block;
+      margin: 0;
+      cursor: pointer;
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--hood-text);
+    }
+    #setup-screen .mode-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #setup-screen .mode-option > span {
+      display: block;
+      padding: 12px 14px 12px 42px;
+      position: relative;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid var(--hood-line);
+      border-radius: 10px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    /* radio dot */
+    #setup-screen .mode-option > span::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      margin-top: -7px;
+      box-sizing: border-box;
+      border: 2px solid var(--hood-dim);
+      border-radius: 50%;
+    }
+    #setup-screen .mode-option strong { display: block; font-size: 0.98rem; }
+    #setup-screen .mode-option small {
+      display: block;
+      margin-top: 2px;
+      font-size: 0.8rem;
+      color: var(--hood-dim);
+    }
+    #setup-screen .mode-option:hover input:not(:disabled) + span {
+      border-color: rgba(255, 255, 255, 0.45);
+    }
+    #setup-screen .mode-option input:checked + span {
+      border-color: var(--hood-accent);
+      background: rgba(255, 179, 71, 0.1);
+    }
+    #setup-screen .mode-option input:checked + span::before {
+      border-color: var(--hood-accent);
+      background: radial-gradient(circle, var(--hood-accent) 0 38%, transparent 42%);
+    }
+    #setup-screen .mode-option input:focus-visible + span {
+      outline: 2px solid var(--hood-accent);
+      outline-offset: 2px;
+    }
+    #setup-screen .mode-option input:disabled + span {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Buttons: reuse .start-btn from splash.css, but stack them full width */
+    #setup-screen .start-btn {
+      width: 100%;
+      margin: 0 0 10px;
+      box-sizing: border-box;
+    }
+    #setup-screen .start-btn:disabled { opacity: 0.6; cursor: wait; }
+    #setup-screen #backToMenuBtn {
+      background: transparent;
+      color: var(--hood-dim);
+      border: 1px solid var(--hood-line);
+      box-shadow: none;
+    }
+    #setup-screen #backToMenuBtn:hover:not(:disabled) {
+      color: var(--hood-text);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    #setup-screen .session-footnote {
+      margin: 8px 0 0;
+      font-size: 0.72rem;
+      text-align: center;
+      color: var(--hood-dim);
+      opacity: 0.8;
+    }
+
+    /* Small phones and short landscape screens */
+    @media (max-width: 480px) {
+      #setup-screen .game-container { padding: 14px 12px; }
+      #setup-screen .session-card { padding: 20px 16px 16px; }
+    }
+    @media (max-height: 640px) {
+      #setup-screen .game-container { padding-top: 12px; padding-bottom: 12px; }
+      #setup-screen .session-intro { margin-bottom: 12px; }
+      #setup-screen select { margin-bottom: 12px; padding-top: 9px; padding-bottom: 9px; }
+      #setup-screen .mode-options { margin-bottom: 14px; }
+    }
+  </style>
+</head>
+<body tabindex="-1">
+
+  <!-- Sponsor Splash Screen -->
+  <div id="splash-screen" class="screen active">
+    <p class="sponsor-text">This gaming experience has been sponsored by</p>
+
+    <div class="logo-stage">
+      <img src="novatrix.png" alt="Novatrix Icon" class="logo-img icon-only">
+      <img src="novatrix-2.png" alt="Novatrix Media Logo" class="logo-img full-logo">
+    </div>
+
+    <div class="loader-track">
+      <div class="loader-fill"></div>
+    </div>
+  </div>
+
+  <!-- Main Game Menu -->
+  <div id="next-screen" class="screen">
+    <div class="game-container">
+      <h1 class="game-title">READY TO PLAY</h1>
+   <!--   <p class="game-subtitle">Choose your next move.</p> -->
+      <button id="startGameBtn" class="start-btn" type="button">DRIVE</button>
+    </div>
+  </div>
+
+  <!-- HOOD session setup: shown after the first Start Driving click -->
+  <div id="setup-screen" class="screen">
+    <div class="game-container">
+      <form id="session-form" class="session-card" novalidate>
+        <p class="session-eyebrow">HOOD</p>
+        <h1 class="game-title" id="setup-title">PREPARE</h1>
+        <p class="session-intro">CHOOSE MODE · ROUTE · CAR</p>
+
+        <label id="mode-label">SELECT MODE FIRST</label>
+        <div class="mode-options" role="radiogroup" aria-labelledby="mode-label">
+          <label class="mode-option">
+            <input type="radio" name="mode" value="free-drive" required>
+            <span>
+              <strong>Free Drive</strong>
+              <small>Explore the road at your own pace.</small>
+            </span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="mode" value="race" required>
+            <span>
+              <strong>Sprint Race</strong>
+              <small>Race through checkpoints; road directions are not enforced.</small>
+            </span>
+          </label>
+        </div>
+
+        <div id="sprint-route-field">
+          <label for="route-choice">SELECT ROUTE</label>
+          <select id="route-choice" name="route" required>
+            <option value="">CHOOSE A ROUTE</option>
+            <option value="state-house-eastbound" data-race-eligible="false">State House Avenue · Eastbound</option>
+            <option value="state-house-westbound" data-race-eligible="false">Nairobi Gallery · Westbound</option>
+            <option value="nairobi-ngara-sprint" data-race-eligible="true">Ngara to Kinyanjui Street</option>
+          </select>
+        </div>
+
+        <label for="car-choice">SELECT CAR</label>
+        <select id="car-choice" name="car" required>
+          <option value="">CHOOSE A CAR</option>
+        </select>
+
+        <button id="continueRouteBtn" class="start-btn session-submit" type="submit">CONTINUE</button>
+        <button id="backToMenuBtn" class="start-btn" type="button">BACK</button>
+        <p class="session-footnote">HOOD Ni Yetu</p>
+      </form>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const LOG = '[HOOD Splash]';
+  const splashScreen = document.getElementById('splash-screen');
+  const menuScreen = document.getElementById('next-screen');
+  const setupScreen = document.getElementById('setup-screen');
+  const startButton = document.getElementById('startGameBtn');
+  const setupForm = document.getElementById('session-form');
+  const continueButton = document.getElementById('continueRouteBtn');
+  const backButton = document.getElementById('backToMenuBtn');
+  const carChoice = document.getElementById('car-choice');
+  const routeChoice = document.getElementById('route-choice');
+    const sprintRouteField = document.getElementById('sprint-route-field');
+
+  if (!splashScreen || !menuScreen || !setupScreen || !startButton ||
+      !setupForm || !continueButton || !backButton || !carChoice || !routeChoice || !sprintRouteField) {
+    console.error(LOG, 'Required elements are missing.');
+    return;
+  }
+
+  // Set by main.js changeRoute(): skip the intro and go straight to setup.
+  let returning = false;
+  try {
+    returning = sessionStorage.getItem('hood.returnToRoutes') === '1' || new URLSearchParams(location.search).has('picker');
+    sessionStorage.removeItem('hood.returnToRoutes');
+  } catch { returning = new URLSearchParams(location.search).has('picker'); }
+  let splashFinished = false;
+  let gameReady = false;
+  let routeLoading = false;
+  let routeReady = false;
+  let started = false;
+  let startTimer = null;
+  let currentScreen = splashScreen;
+
+  startButton.hidden = true;
+  startButton.disabled = true;
+
+  function notifyParent(type, extra = {}) {
+    console.log(LOG, '->', type, extra);
+    window.parent.postMessage({ type, ...extra }, window.location.origin);
+  }
+
+  function showScreen(screen) {
+    [splashScreen, menuScreen, setupScreen].forEach((item) => {
+      item.classList.remove('active', 'fade-out');
+    });
+    screen.classList.add('active');
+    currentScreen = screen;
+  }
+
+  function resetStart() {
+    clearTimeout(startTimer);
+    started = false;
+    startButton.disabled = false;
+    startButton.textContent = 'DRIVE';
+  }
+
+  function updateScreen() {
+    if (!splashFinished || !gameReady || started) return;
+    if (currentScreen !== splashScreen) return;
+
+    splashScreen.classList.add('fade-out');
+
+    setTimeout(() => {
+      if (started || currentScreen !== splashScreen) return;
+      startButton.hidden = false;
+      startButton.disabled = false;
+      showScreen(returning && !routeReady ? setupScreen : menuScreen);
+    }, returning ? 0 : 900);
+  }
+
+  // Fill the car picker from CONFIG.cars (sent by the game).
+  function populateCars(cars, defaultCar) {
+    if (!Array.isArray(cars) || !cars.length) return;
+    carChoice.replaceChildren(new Option('CHOOSE A CAR', ''), ...cars.map((car) => {
+      const option = document.createElement('option');
+      option.value = car.id;
+      option.textContent = car.name;
+      return option;
+    }));
+    carChoice.value = '';
+  }
+
+  function updateSprintRouteField() {
+    const sprint = setupForm.querySelector('input[name="mode"]:checked')?.value === 'race';
+    for (const option of routeChoice.options) {
+      if (option.value) option.disabled = sprint && option.dataset.raceEligible !== 'true';
+    }
+    if (routeChoice.selectedOptions[0]?.disabled) routeChoice.value = '';
+  }
+
+  setupForm.addEventListener('change', (event) => {
+    if (event.target.name === 'mode') updateSprintRouteField();
+  });
+  updateSprintRouteField();
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return;
+    if (event.origin !== window.location.origin) return;
+
+    const message = event.data;
+    if (!message || typeof message.type !== 'string') return;
+    if (message.type !== 'HOOD_LOAD_PROGRESS') console.log(LOG, '<-', message.type, message);
+
+    switch (message.type) {
+      case 'HOOD_CARS':
+        populateCars(message.cars, message.defaultCar);
+        break;
+
+      case 'HOOD_GAME_READY':
+        gameReady = true;
+        updateScreen();
+        break;
+
+      case 'HOOD_START_REJECTED':
+      case 'HOOD_SHOW_ROUTE_PICKER':
+        // Parent says no route is ready: undo "starting" and go to setup.
+        resetStart();
+        routeReady = false;
+        showScreen(setupScreen);
+        break;
+
+      case 'HOOD_ROUTE_PROGRESS':
+        routeLoading = true;
+        continueButton.disabled = true;
+        continueButton.textContent = 'LOADING ROUTE...';
+        break;
+
+      case 'HOOD_ROUTE_READY':
+        routeLoading = false;
+        routeReady = true;
+        continueButton.disabled = false;
+        continueButton.textContent = 'CONTINUE';
+        startButton.textContent = 'DRIVE';
+        startButton.disabled = false;
+        // Only leave the current screen if the intro is already over.
+        if (currentScreen !== splashScreen) showScreen(menuScreen);
+        break;
+
+      case 'HOOD_ROUTE_ERROR':
+        routeLoading = false;
+        routeReady = false;
+        continueButton.disabled = false;
+        continueButton.textContent = 'RETRY';
+        console.error(LOG, 'Route loading failed:', message.message);
+        break;
+
+      case 'HOOD_SESSION_STARTED':
+        // Driving began: the safety timer is no longer needed.
+        clearTimeout(startTimer);
+        break;
+
+      case 'HOOD_GAME_ERROR':
+        console.error(LOG, 'Game loading failed:', message.message);
+        break;
+    }
+  });
+
+  setTimeout(() => {
+    splashFinished = true;
+    updateScreen();
+  }, returning ? 300 : 5000);
+
+  startButton.addEventListener('click', () => {
+    if (!splashFinished || !gameReady || started) return;
+
+    if (routeReady) {
+      started = true;
+      startButton.disabled = true;
+      startButton.textContent = 'STARTING DRIVE...';
+      notifyParent('HOOD_START_GAME');
+
+      clearTimeout(startTimer);
+      startTimer = setTimeout(() => {
+        if (started) {
+          console.warn(LOG, 'No response to START_GAME after 6s, resetting.');
+          resetStart();
+        }
+      }, 6000);
+      return;
+    }
+
+    showScreen(setupScreen);
+  });
+
+  // CONTINUE: send car + route + mode, then load the route.
+  setupForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (routeLoading || started) return;
+
+    if (routeReady) {
+      showScreen(menuScreen);
+      return;
+    }
+
+    const data = new FormData(setupForm);
+    const mode = data.get('mode');
+    if (!mode) {
+      setupForm.querySelector('input[name="mode"]')?.focus();
+      return;
+    }
+    const routeId = data.get('route');
+    const carId = data.get('car');
+    if (!routeId) {
+      routeChoice.focus();
+      return;
+    }
+    if (!carId) {
+      carChoice.focus();
+      return;
+    }
+    routeLoading = true;
+    continueButton.disabled = true;
+    continueButton.textContent = 'LOADING ROUTE...';
+
+    notifyParent('HOOD_SELECT_ROUTE', {
+      routeId,
+      carId,
+      mode
+    });
+  });
+
+  backButton.addEventListener('click', () => {
+    if (!routeLoading && !started) showScreen(menuScreen);
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.repeat || event.ctrlKey || event.altKey ||
+        event.metaKey || event.shiftKey) return;
+
+    // Only on the menu screen, so Enter on the setup form can't double-fire.
+    if (event.key === 'Enter' && currentScreen === menuScreen &&
+        !startButton.hidden && !startButton.disabled) {
+      startButton.click();
+    }
+  });
+
+  notifyParent('HOOD_SPLASH_LOADED');
+})();
+</script>
+
+</body>
+</html>

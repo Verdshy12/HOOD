@@ -1,0 +1,1064 @@
+{
+box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #05080c;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+#app-shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.orientation-gate { display: none; }
+
+@media (max-width: 700px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
+  .orientation-gate {
+    position: absolute;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 14px;
+    padding: 28px;
+    background: #05080c;
+    text-align: center;
+  }
+  .orientation-gate h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 20px;
+  }
+  .orientation-gate p {
+    max-width: 280px;
+    margin: 0;
+    color: #aebdca;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .orientation-gate .orientation-mark {
+    color: #20c8ff;
+    font-size: 42px;
+    line-height: 1;
+    transform: rotate(90deg);
+  }
+  #orientationGateBtn {
+    min-height: 46px;
+    padding: 0 18px;
+    border: 1px solid #20c8ff;
+    border-radius: 8px;
+    background: #07131d;
+    color: #fff;
+    font-weight: 700;
+  }
+}
+
+#game {
+position: fixed;
+inset: 0;
+touch-action: none;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hud {
+  position: fixed;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.top {
+  top: 18px;
+  left: 20px;
+}
+
+.top h1 {
+  font-size: clamp(15px, 2vw, 24px);
+  letter-spacing: 2px;
+  margin: 0 0 7px;
+}
+
+.top p {
+  color: #aebdca;
+  font-size: 12px;
+  margin: 0;
+}
+
+.speed {
+  right: 22px;
+  top: 20px;
+  text-align: right;
+  color: #20c8ff;
+}
+
+.speed strong {
+  display: block;
+  font-size: 38px;
+}
+
+.speed span {
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.gear {
+  font-size: 30px;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 6px;
+}
+
+.rpm {
+  width: 170px;
+  height: 8px;
+  background: #0a1a26;
+  border: 1px solid #20c8ff55;
+  margin: 6px 0 2px auto;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#rpmFill {
+height: 100%;
+width: 0;
+background: #20c8ff;
+}
+
+.bottom {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+#steering {
+color: #20c8ff;
+border: 1px solid #20c8ff;
+background: #07131de8;
+border-radius: 24px;
+padding: 10px 20px;
+font-weight: bold;
+white-space: nowrap;
+}
+
+#message {
+margin-top: 10px;
+font-size: 12px;
+color: #b3c2ce;
+}
+
+#help {
+position: fixed;
+bottom: 20px;
+right: 20px;
+color: #c4d0d9;
+font-size: 11px;
+line-height: 1.8;
+text-align: right;
+pointer-events: none;
+}
+
+#loading {
+position: fixed;
+inset: 0;
+display: grid;
+place-items: center;
+background: #05080c;
+color: #20c8ff;
+z-index: 5;
+font-size: 13px;
+letter-spacing: 2px;
+transition: opacity 0.4s ease;
+}
+
+.drive-controls {
+  position: fixed;
+  left: 16px;
+  bottom: 62px;
+  z-index: 3;
+  display: flex;
+  gap: 10px;
+}
+
+#camBtn { display: none; }
+
+body.mobile-layout #help { display: none; }
+body.mobile-layout #camBtn { display: block; }
+body.mobile-layout .drive-controls {
+  left: 10px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  flex-direction: column-reverse;
+  transform: none;
+  gap: 6px;
+}
+body.mobile-layout .drive-btn {
+  width: 112px;
+  min-height: 44px;
+  padding: 5px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+}
+body.mobile-layout .drive-btn small { font-size: 8px; }
+body.mobile-layout .mobile-drive-controls {
+  position: fixed;
+  inset: auto 14px max(14px, env(safe-area-inset-bottom));
+  z-index: 5;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+body.mobile-layout .mobile-steering-fallback {
+  position: absolute;
+  left: 122px;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+body.mobile-layout .mobile-pedals {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  pointer-events: auto;
+}
+body.mobile-layout .mobile-control {
+  min-width: 60px;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid #20c8ff99;
+  border-radius: 12px;
+  background: #07131de8;
+  color: #fff;
+  font: 700 12px/1 Arial, sans-serif;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.mobile-layout .mobile-steering-fallback .mobile-control { font-size: 20px; }
+body.mobile-layout .mobile-control.on { background: #20c8ff; color: #05080c; }
+body.mobile-layout .mobile-brake { min-height: 52px; color: #ffb3a8; border-color: #f05448aa; }
+body.mobile-layout .mobile-throttle { min-height: 72px; color: #bdf5d0; border-color: #55d68b99; }
+
+.drive-btn {
+  background: #07131de8;
+  color: #20c8ff;
+  border: 1px solid #20c8ff;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.drive-btn small {
+  display: block;
+  font-size: 9px;
+  color: #9fb3c2;
+  font-weight: normal;
+}
+
+.drive-btn.on {
+  background: #20c8ff;
+  color: #05080c;
+}
+
+.drive-btn.on small {
+  color: #05080c;
+}
+
+.boost-panel {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  width: 190px;
+  z-index: 3;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #20c8ff;
+}
+
+.boost-heading {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.boost-track {
+  height: 9px;
+  background: #0a1a26;
+  border: 1px solid #20c8ff55;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+#boostFill {
+height: 100%;
+width: 100%;
+background: linear-gradient(90deg, #ff7a18, #ffd23f);
+}
+
+.mobile-drive-controls { display: none; }
+#fullscreenBtn { display: none; }
+
+@media (max-width: 700px), (pointer: coarse) {
+  #help { display: none; }
+  #camBtn { display: block; }
+}
+
+@media (max-width: 600px) {
+  .top {
+    top: 12px;
+    left: 12px;
+  }
+  .speed {
+    top: 12px;
+    right: 12px;
+  }
+  .speed strong {
+    font-size: 28px;
+  }
+  #help {
+  display: none;
+  }
+}
+
+
+/* ---------- Novatrix Media Splash Integration ---------- */
+
+#splash-overlay {
+position: fixed;
+inset: 0;
+z-index: 1000;
+background: #0b2135;
+opacity: 1;
+visibility: visible;
+pointer-events: auto;
+transition:
+opacity 0.6s ease,
+visibility 0.6s ease;
+}
+
+#splash-frame {
+display: block;
+width: 100%;
+height: 100%;
+border: 0;
+}
+
+#splash-overlay.dismissed {
+opacity: 0;
+visibility: hidden;
+pointer-events: none;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  #splash-overlay {
+  transition: none;
+  }
+}
+
+
+
+/* ---------- v1.2.2: route HUD ---------- */
+.route {
+  top: 76px;
+  right: 20px;
+  left: auto;
+  width: 175px;
+  display: none;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  color: #e3ecf3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
+
+body.driving .route { display: block; }
+.route-name { color: #fff; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+.route-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.route-row strong { color: #fff; }
+.sprint-checkpoint-name { margin: -2px 0 5px; color: #fff; font-size: 10px; line-height: 1.2; }
+.route-track { height: 4px; background: rgba(255,255,255,.15); border-radius: 3px; overflow: hidden; }
+#routeFill { height: 100%; width: 0; background: #f05448; }
+#routesBtn {
+  margin-top: 8px; pointer-events: auto; cursor: pointer;
+  font: inherit; font-size: 11px; letter-spacing: 1px; color: #fff;
+  background: rgba(11,33,53,.75); border: 1px solid rgba(255,255,255,.25); border-radius: 3px; padding: 5px 8px;
+}
+#routesBtn:hover { border-color: #f05448; }
+@media (max-width: 600px) { .route { top: 66px; left: 12px; width: 190px; } }
+
+@media (max-height: 600px) and (orientation: landscape) {
+  #game,
+  .hud,
+  #help,
+  #loading,
+  .drive-controls,
+  .mobile-drive-controls,
+  .boost-panel,
+  #splash-overlay,
+  .hr-widget,
+  .hr-overlay,
+  #app-shell > pre {
+    position: absolute;
+  }
+
+  .top,
+  .speed,
+  .route,
+  .drive-controls,
+  .boost-panel,
+  .mobile-drive-controls,
+  .hr-widget,
+  .hr-overlay {
+    z-index: 4;
+  }
+
+  .top {
+    top: 8px;
+    left: 12px;
+    max-width: 45%;
+  }
+
+  .top h1 { font-size: 16px; margin-bottom: 2px; }
+  .top p { font-size: 9px; }
+
+  .speed {
+    top: 6px;
+    right: 12px;
+  }
+
+  .speed strong { font-size: 28px; line-height: 1; }
+  .speed span { font-size: 9px; }
+  .rpm { width: 112px; height: 6px; margin-top: 3px; }
+  .gear { font-size: 18px; margin-top: 1px; }
+
+  .route {
+    top: 56px;
+    left: 12px;
+    width: 186px;
+    font-size: 10px;
+  }
+
+  .route-name { margin-bottom: 3px; }
+  .route-row { margin-bottom: 3px; }
+  #routesBtn { margin-top: 4px; padding: 3px 6px; font-size: 9px; }
+
+  .boost-panel {
+    top: 62px;
+    right: 12px;
+    left: auto;
+    bottom: auto;
+    width: 112px;
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+
+  .boost-track { height: 6px; }
+
+  .drive-controls {
+    left: 10px;
+    bottom: 10px;
+    flex-direction: column-reverse;
+    transform: none;
+    gap: 6px;
+  }
+
+  .drive-btn {
+    width: 112px;
+    min-height: 44px;
+    padding: 5px 7px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+
+  .drive-btn small { font-size: 8px; }
+
+  .mobile-drive-controls {
+    inset: auto 10px 10px;
+    z-index: 5;
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
+  .mobile-pedals {
+    display: flex;
+    align-items: end;
+    gap: 6px;
+    pointer-events: auto;
+  }
+
+  .mobile-steering-fallback { display: flex; position: absolute; left: 122px; bottom: 0; gap: 6px; pointer-events: auto; }
+
+  .mobile-control {
+    min-width: 56px;
+    min-height: 56px;
+    padding: 6px;
+    border: 1px solid #20c8ff99;
+    border-radius: 10px;
+    background: #07131de8;
+    color: #fff;
+    font: 700 12px/1 Arial, sans-serif;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .mobile-steering-fallback .mobile-control { font-size: 20px; }
+  .mobile-control.on { background: #20c8ff; color: #05080c; }
+  .mobile-brake { min-height: 48px; color: #ffb3a8; border-color: #f05448aa; }
+  .mobile-throttle { min-height: 68px; color: #bdf5d0; border-color: #55d68b99; }
+
+  #splash-frame { position: absolute; inset: 0; }
+  .hr-widget { top: 8px; bottom: auto; left: 50%; transform: translateX(-50%); width: min(250px, 30vw); }
+  .hr-widget .hr-art { width: 34px; height: 34px; }
+  .hr-widget .hr-controls { gap: 3px; }
+  .hr-widget .hr-volume { max-width: 55px; }
+  .hr-overlay { inset: 8px; }
+  .hr-panel { max-height: 90%; }
+  #help { display: none; }
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+  #fullscreenBtn {
+    position: absolute;
+    top: 108px;
+    right: 12px;
+    z-index: 1101;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid #20c8ff88;
+    border-radius: 8px;
+    background: #07131de8;
+    color: #fff;
+    font-size: 20px;
+    touch-action: manipulation;
+  }
+}
+/* ================= v1.2.3 — responsive + touch layout ================= */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+html, body { height: 100%; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+body { position: fixed; inset: 0; width: 100%; -webkit-text-size-adjust: 100%; -webkit-touch-callout: none; }
+.drive-btn, .mobile-control, #routesBtn, #fullscreenBtn { -webkit-user-select: none; user-select: none; }
+.mobile-control span { display: block; font-size: 22px; line-height: 1; }
+.mobile-control small { display: block; margin-top: 3px; font-size: 9px; font-weight: 400; letter-spacing: 1px; }
+
+/* Safe areas (notch / rounded corners) */
+body .top   { left: calc(12px + var(--sal)); top: calc(10px + var(--sat)); }
+body .speed { right: calc(12px + var(--sar)); top: calc(8px + var(--sat)); }
+body .route { left: calc(12px + var(--sal)); }
+
+/* Desktop windows that happen to be short must NOT show touch controls */
+@media (max-height: 600px) and (orientation: landscape) {
+  body:not(.mobile-layout) .mobile-drive-controls { display: none; }
+}
+
+/* ---- Touch layout: steering LEFT, pedals RIGHT, actions above pedals, boost top-right ---- */
+body.mobile-layout .mobile-drive-controls {
+  display: flex;
+  inset: auto calc(12px + var(--sar)) calc(10px + var(--sab)) calc(12px + var(--sal));
+  justify-content: space-between;
+  align-items: flex-end;
+}
+body.mobile-layout .mobile-steering-fallback { position: static; left: auto; display: flex; gap: 10px; }
+body.mobile-layout .mobile-pedals { gap: 10px; }
+body.mobile-layout .mobile-control { min-width: 72px; min-height: 72px; }
+body.mobile-layout .mobile-brake { min-height: 72px; }
+body.mobile-layout .mobile-throttle { min-height: 96px; }
+
+body.mobile-layout .drive-controls {
+  left: auto;
+  right: calc(12px + var(--sar));
+  bottom: calc(116px + var(--sab));
+  flex-direction: row;
+  gap: 6px;
+}
+body.mobile-layout .drive-btn { width: 88px; min-height: 44px; }
+
+body.mobile-layout .boost-panel {
+  left: auto; bottom: auto;
+  top: calc(104px + var(--sat));
+  right: calc(12px + var(--sar));
+  width: 120px;
+}
+
+body.mobile-layout #fullscreenBtn {
+  position: fixed;
+  top: calc(8px + var(--sat));
+  right: calc(150px + var(--sar));
+  z-index: 1101;
+  display: grid; place-items: center;
+  width: 38px; height: 38px; padding: 0;
+  border: 1px solid #20c8ff88; border-radius: 8px;
+  background: #07131de8; color: #fff; font-size: 20px;
+  touch-action: manipulation;
+}
+
+/* Very short phones (≈ 320–420px tall in landscape) */
+@media (max-height: 420px) and (orientation: landscape) {
+  body.mobile-layout .mobile-control  { min-width: 60px; min-height: 60px; }
+  body.mobile-layout .mobile-brake    { min-height: 60px; }
+  body.mobile-layout .mobile-throttle { min-height: 84px; }
+  body.mobile-layout .drive-controls  { bottom: calc(100px + var(--sab)); }
+  body.mobile-layout .mobile-control span { font-size: 18px; }
+}
+
+/* ---------- Radio / Music Panel ---------- */
+#radio-panel {
+position: fixed;
+left: 16px;
+bottom: 120px;
+width: 225px;
+background: #07131de8;
+border: 1px solid #20c8ff88;
+border-radius: 14px;
+padding: 10px 12px;
+z-index: 3;
+backdrop-filter: blur(6px);
+box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.route-actions { display: flex; align-items: center; gap: 6px; }
+#pauseBtn {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 3px;
+  background: rgba(11,33,53,.75);
+  color: #fff;
+  font: 700 14px/1 Arial, sans-serif;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+#pauseBtn:hover { border-color: #20c8ff; }
+.driver-stats {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,.18);
+  font-size: 10px;
+  letter-spacing: .5px;
+}
+.driver-stats .route-row { margin-bottom: 3px; }
+.driver-stats strong { font-variant-numeric: tabular-nums; }
+
+.game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(3,8,12,.76);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+.game-overlay[hidden] { display: none; }
+.overlay-panel {
+  width: min(100%, 440px);
+  padding: clamp(22px, 5vw, 36px);
+  border: 1px solid rgba(32,200,255,.55);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(17,34,44,.98), rgba(6,12,17,.98));
+  box-shadow: 0 24px 70px rgba(0,0,0,.5);
+}
+.overlay-kicker {
+  margin: 0 0 10px;
+  color: #20c8ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.overlay-panel h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(25px, 6vw, 34px);
+  line-height: 1.1;
+}
+.overlay-copy {
+  margin: 10px 0 24px;
+  color: #aebdca;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.overlay-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.overlay-actions button {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 4px;
+  font: 700 12px/1 Arial, sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.overlay-primary { border: 1px solid #20c8ff; background: #20c8ff; color: #041017; }
+.overlay-secondary { border: 1px solid rgba(255,255,255,.28); background: transparent; color: #fff; }
+.result-times { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0; }
+.result-times div { min-width: 0; padding: 12px; border-left: 2px solid #20c8ff; background: rgba(255,255,255,.045); }
+.result-times span, .result-times strong { display: block; }
+.result-times span { color: #aebdca; font-size: 9px; letter-spacing: 1px; }
+.result-times strong { margin-top: 5px; color: #fff; font-size: 22px; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 600px) {
+  .driver-stats { font-size: 9px; }
+  #routesBtn { font-size: 9px; }
+  .overlay-actions { flex-direction: column; }
+  .overlay-actions button { width: 100%; }
+}
+
+@media (max-height: 420px) and (orientation: landscape) {
+  .driver-stats { margin-top: 4px; padding-top: 3px; }
+  .driver-stats .route-row { margin-bottom: 1px; }
+  .game-overlay { padding: 8px; }
+  .overlay-panel { padding: 16px; }
+  .overlay-copy { margin: 6px 0 12px; }
+  .result-times { margin: 12px 0; }
+}
+
+.radio-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radio-play-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #20c8ff;
+  background: #0a1a26;
+  color: #20c8ff;
+  font-size: 13px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.radio-play-btn:hover,
+.radio-play-btn.playing {
+  background: #20c8ff;
+  color: #05080c;
+}
+
+.radio-info {
+  overflow: hidden;
+  flex: 1;
+}
+
+.track-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-artist {
+  font-size: 10px;
+  color: #9fb3c2;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.radio-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.radio-nav-btn {
+  flex: 1;
+  background: #0a1a26;
+  color: #20c8ff;
+  border: 1px solid #20c8ff55;
+  border-radius: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.radio-nav-btn:hover {
+  background: #20c8ff22;
+  border-color: #20c8ff;
+}
+
+.volume-slider {
+  width: 100%;
+  margin-top: 8px;
+  accent-color: #20c8ff;
+  height: 4px;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  #radio-panel {
+  width: 190px;
+  bottom: 116px;
+  }
+}
+
+/* In-drive HUD and menu layout */
+body .top { z-index: 4; }
+body .top h1 { font-size: clamp(16px, 2vw, 23px); letter-spacing: 1px; }
+body .top p, #help, .hud.speed { display: none; }
+body .route {
+  top: calc(14px + var(--sat));
+  right: calc(14px + var(--sar));
+  left: auto;
+
+  width: 165px;
+  max-width: 165px;
+
+  padding: 8px 9px;
+  border-left: 2px solid #20c8ff;
+
+  background: linear-gradient(
+    90deg,
+    rgba(5,12,17,.58),
+                              rgba(5,12,17,.92)
+  );
+
+  font-size: 10px;
+  letter-spacing: .4px;
+  pointer-events: none;
+}
+.route-name { margin-bottom: 8px; font-size: 13px; }
+.route-row { gap: 12px; align-items: baseline; }
+.route-row span { color: #aebdca; }
+.route-row strong { text-align: right; font-variant-numeric: tabular-nums; }
+#routeFill { background: #20c8ff; }
+#menuBtn {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 9px;
+  border: 1px solid rgba(32,200,255,.7);
+  border-radius: 4px;
+  background: rgba(5,18,26,.88);
+  color: #fff;
+  font: 700 11px/1 Arial, sans-serif;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+#menuBtn:hover { background: #20c8ff; color: #041017; }
+
+.game-overlay { z-index: 1200; overflow-y: auto; }
+.overlay-panel { width: min(100%, 600px); max-height: 100%; overflow-y: auto; }
+.menu-view[hidden] { display: none; }
+.menu-options { display: grid; grid-template-columns: 1fr 1fr; margin-top: 22px; }
+.menu-options button { min-height: 50px; }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin: 18px 0;
+}
+.dashboard-block { min-width: 0; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.18); }
+.dashboard-block h3, .controls-grid h3 {
+  margin: 0 0 10px;
+  color: #20c8ff;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+.dashboard-block .route-row { margin-bottom: 8px; font-size: 10px; }
+.dashboard-block .route-row strong { max-width: 58%; overflow-wrap: anywhere; }
+.sprint-records-block { grid-column: 1 / -1; }
+.sprint-records > p { color: #aebdca; font-size: 12px; }
+.sprint-record {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(255,255,255,.1);
+  color: #d8e2e8;
+  font-size: 10px;
+}
+.sprint-record strong { color: #fff; text-align: right; white-space: nowrap; }
+.controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 20px 0; }
+.controls-grid p { margin: 0 0 9px; color: #d8e2e8; font-size: 12px; line-height: 1.4; }
+.menu-view > .overlay-actions { margin-top: 12px; }
+
+@media (max-width: 700px) {
+  body .route { width: min(300px, calc(53vw - 20px)); padding: 9px; font-size: 10px; }
+  .route-name { font-size: 11px; }
+  #menuBtn { min-height: 48px; }
+  .menu-options { grid-template-columns: 1fr; }
+  .dashboard-grid, .controls-grid { grid-template-columns: 1fr; gap: 0; }
+  .overlay-panel { padding: 20px; }
+}
+
+@media (min-width: 701px) and (pointer: fine) {
+  #driftBtn, #turboBtn { display: none; }
+  body .hud.speed {
+    display: block;
+    top: calc(58px + var(--sat));
+    right: auto;
+    bottom: auto;
+    left: calc(20px + var(--sal));
+    width: 190px;
+    padding: 10px 12px;
+    border-left: 2px solid #20c8ff;
+    background: rgba(5,12,17,.82);
+    text-align: left;
+  }
+  body .hud.speed strong { font-size: 34px; line-height: 1; }
+  body .hud.speed .rpm { width: 100%; margin-left: 0; }
+  body .route {
+    top: calc(14px + var(--sat));
+    right: calc(14px + var(--sar));
+    left: auto;
+    width: 165px;
+  }
+}
+
+@media (pointer: coarse) {
+  body.mobile-layout .boost-panel {
+    top: calc(52px + var(--sat));
+    right: auto;
+    left: calc(12px + var(--sal));
+    width: 124px;
+  }
+  body.mobile-layout .hud.speed {
+    display: block;
+    top: calc(104px + var(--sat));
+    right: auto;
+    left: calc(12px + var(--sal));
+    width: 124px;
+    padding: 7px 9px;
+    border-left: 2px solid #20c8ff;
+    background: rgba(5,12,17,.82);
+    text-align: left;
+  }
+  body.mobile-layout .hud.speed strong { font-size: 28px; line-height: 1; }
+  body.mobile-layout .hud.speed span { font-size: 9px; }
+  body.mobile-layout .hud.speed .rpm { width: 100%; margin: 5px 0 2px; }
+  body.mobile-layout .hud.speed .gear { margin-top: 2px; font-size: 20px; }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  body .route { top: calc(5px + var(--sat)); width: min(280px, 34vw); padding: 7px; }
+  .route-name { margin-bottom: 4px; }
+  .route-row { margin-bottom: 2px; }
+  #menuBtn { min-height: 38px; margin-top: 4px; }
+  body.mobile-layout .boost-panel { top: calc(44px + var(--sat)); }
+  body.mobile-layout .hud.speed { top: calc(94px + var(--sat)); }
+  .overlay-panel { padding: 16px 22px; }
+  .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-height: 480px) and (orientation: landscape) and (min-width: 701px) and (pointer: fine) {
+  body .route {
+    top: calc(14px + var(--sat));
+    right: calc(10px + var(--sar));
+    left: auto;
+    width: 150px;
+  }
+}
+
+
+/* Live sprint checkpoint HUD */
+.sprint-hud {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255,255,255,.18);
+}
+.sprint-hud[hidden],
+.checkpoint-notice[hidden] {
+  display: none;
+}
+.sprint-hud-top,
+.sprint-hud-next {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.sprint-hud-top {
+  margin-bottom: 5px;
+  color: rgba(255,255,255,.7);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.sprint-hud-top strong {
+  color: #f05448;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.sprint-hud-next {
+  font-size: 10px;
+}
+.sprint-hud-next span {
+  color: rgba(255,255,255,.55);
+  font-size: 9px;
+  letter-spacing: .8px;
+}
+.sprint-hud-next strong {
+  color: #fff;
+  text-align: right;
+}
+.checkpoint-notice {
+  position: absolute;
+  z-index: 20;
+  top: 23%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 210px;
+  max-width: min(90vw, 340px);
+  padding: 12px 20px;
+  text-align: center;
+  color: #fff;
+  background: rgba(9,20,30,.9);
+  border: 1px solid rgba(240,84,72,.85);
+  border-left: 4px solid #f05448;
+  border-radius: 4px;
+  pointer-events: none;
+  animation: checkpoint-pop 2.2s ease both;
+}
+.checkpoint-notice span {
+  display: block;
+  margin-bottom: 5px;
+  color: #f05448;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+}
+.checkpoint-notice strong {
+  display: block;
+  font-size: 15px;
+  letter-spacing: .3px;
+}
+@keyframes checkpoint-pop {
+  0% { opacity: 0; translate: 0 10px; }
+  12%, 78% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: 0 -5px; }
+}

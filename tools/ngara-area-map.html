@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HOOD — Ngara Road Network</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10151c;color:#e8edf2;font:14px Arial,sans-serif}
+header{padding:16px 20px;background:#1b2530;position:sticky;top:0;z-index:5}
+h2{margin:0 0 6px;font-size:19px}
+p{margin:0;color:#9eabb9}
+.controls{display:flex;flex-wrap:wrap;gap:14px;margin-top:13px}
+label{display:flex;gap:6px;align-items:center;cursor:pointer}
+main{padding:12px}
+#map{width:100%;height:calc(100vh - 160px);min-height:500px;background:#202a32;border:1px solid #394650;border-radius:8px}
+svg{width:100%;height:100%;touch-action:pan-y}
+.road{fill:none;stroke-linecap:round;stroke-linejoin:round;cursor:pointer}
+.road:hover{stroke:#fff!important;stroke-width:7!important}
+.route{fill:none;stroke:#ffcf40;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.checkpoint{fill:#ff5b5b;stroke:white;stroke-width:2}
+text{font-family:Arial,sans-serif;pointer-events:none}
+#info{padding:10px 14px;background:#1b2530;border-radius:7px;margin-top:10px;color:#d7e0e8}
+</style>
+</head>
+<body>
+<header>
+<h2>HOOD — Ngara / Kinyanjui Road Network</h2>
+<p>Interactive local road map · Project coordinates · Not a geographic satellite map</p>
+<div class="controls">
+<label><input type="checkbox" id="asphalt" checked> Asphalt roads</label>
+<label><input type="checkbox" id="murram" checked> Murram roads</label>
+<label><input type="checkbox" id="other" checked> Other roads</label>
+<label><input type="checkbox" id="route" checked> Existing sprint route</label>
+<label><input type="checkbox" id="points" checked> Checkpoints</label>
+<label><input type="checkbox" id="names"> Road names</label>
+</div>
+</header>
+<main>
+<div id="map"><svg id="svg" viewBox="0 0 1200 850" preserveAspectRatio="xMidYMid meet"></svg></div>
+<div id="info">Click a road to inspect its name, ID, surface and width. Scroll to zoom where supported.</div>
+</main>
+<script>
+const svg=document.getElementById('svg');
+const NS='http://www.w3.org/2000/svg';
+const info=document.getElementById('info');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function el(tag,attrs,parent=svg){
+ const n=document.createElementNS(NS,tag);
+ for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);
+ parent.appendChild(n);return n;
+}
+Promise.all([
+ fetch('../data/tiles/ngara-sprint.json').then(r=>{if(!r.ok)throw Error('Cannot load Ngara tile');return r.json()}),
+ fetch('../data/routes/all-routes.json').then(r=>{if(!r.ok)throw Error('Cannot load route data');return r.json()})
+]).then(([tile,data])=>{
+ const roads=tile.roads||[];
+ const routeList=Array.isArray(data)?data:(data.routes||[]);
+ const sprint=routeList.find(r=>r.id==='nairobi-ngara-sprint');
+ const all=[];
+ roads.forEach(r=>(r.pts||[]).forEach((v,i)=>{if(i%2===0&&Number.isFinite(v)&&Number.isFinite(r.pts[i+1]))all.push([v,r.pts[i+1]])}));
+ if(sprint)(sprint.pts||[]).forEach((v,i)=>{if(i%2===0&&Number.isFinite(v)&&Number.isFinite(sprint.pts[i+1]))all.push([v,sprint.pts[i+1]])});
+ if(!all.length)throw Error('No coordinate points found in tile.');
+ const xs=all.map(p=>p[0]),zs=all.map(p=>p[1]);
+ const minX=Math.min(...xs),maxX=Math.max(...xs),minZ=Math.min(...zs),maxZ=Math.max(...zs);
+ const pad=45,scale=Math.min((1200-pad*2)/(maxX-minX||1),(850-pad*2)/(maxZ-minZ||1));
+ const ox=(1200-(maxX-minX)*scale)/2,oy=(850-(maxZ-minZ)*scale)/2;
+ const X=x=>ox+(x-minX)*scale,Y=z=>850-(oy+(z-minZ)*scale);
+ const layers={asphalt:el('g',{}),murram:el('g',{}),other:el('g',{}),route:el('g',{}),points:el('g',{}),names:el('g',{})};
+ const color=r=>{
+  const s=String(r.surface||'').toLowerCase();
+  if(/murram|dirt|ground|unpaved|gravel/.test(s))return ['murram','#bd9560'];
+  if(/asphalt|paved|concrete|sett/.test(s))return ['asphalt','#73818c'];
+  return ['other','#536b79'];
+ };
+ roads.forEach(r=>{
+  const pts=r.pts||[];if(pts.length<4)return;
+  const [type,c]=color(r),g=layers[type];
+  const d=Array.from({length:Math.floor(pts.length/2)},(_,i)=>(i?'L':'M')+X(pts[i*2])+','+Y(pts[i*2+1])).join(' ');
+  const path=el('path',{d,class:'road',stroke:c,'stroke-width':Math.max(1.5,Number(r.w||5)*scale*.65),'data-type':type},g);
+  path.addEventListener('click',()=>info.textContent=`${r.name||'Unnamed road'} · ID ${r.id??'unknown'} · Surface ${r.surface||'unspecified'} · Width ${r.w??'unknown'} m · ${pts.length/2} points`);
+  if(r.name)el('text',{x:X(pts[0]),y:Y(pts[1])-5,fill:'#c8d2da','font-size':10},layers.names).textContent=r.name;
+ });
+ if(sprint?.pts?.length){
+  const pts=sprint.pts;
+  const d=Array.from({length:Math.floor(pts.length/2)},(_,i)=>(i?'L':'M')+X(pts[i*2])+','+Y(pts[i*2+1])).join(' ');
+  el('path',{d,class:'route'},layers.route);
+  (sprint.checkpoints||[]).forEach((c,i)=>{
+   const x=X(c.x),y=Y(c.z);
+   el('circle',{cx:x,cy:y,r:7,class:'checkpoint'},layers.points);
+   el('text',{x:x+10,y:y-9,fill:'#fff','font-size':12},layers.points).textContent=c.name||`Checkpoint ${i+1}`;
+  });
+ }
+ const toggles={asphalt:'asphalt',murram:'murram',other:'other',route:'route',points:'points',names:'names'};
+ Object.entries(toggles).forEach(([id,key])=>document.getElementById(id).addEventListener('change',e=>layers[key].style.display=e.target.checked?'':'none'));
+ info.textContent=`Loaded ${roads.length} road features. Existing sprint: ${sprint?'91-point route with '+(sprint.checkpoints||[]).length+' checkpoints':'not found'}.`;
+}).catch(e=>{info.textContent='Map error: '+e.message;console.error(e)});
+</script>
+</body>
+</html>

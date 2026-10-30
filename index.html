@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const navigation = performance.getEntriesByType('navigation')[0];
+      if (navigation?.type === 'reload' && !params.has('picker') && !params.has('menu')) {
+        params.delete('autostart');
+        params.delete('hoodFlow');
+        params.delete('route');
+        params.delete('car');
+        params.delete('mode');
+        params.set('menu', '1');
+        window.location.replace(window.location.pathname + '?' + params.toString());
+        return;
+      }
+      const isDriveHandoff = params.has("autostart") || params.has("hoodFlow") || params.has("picker") || params.has("menu");
+      if (!isDriveHandoff) window.location.replace("./index3.html");
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#05080c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="Files/splash/hood-icon-192.png">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HOOD">
+  <title>HOOD v1.2.4</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="music/radio.css?v=1.2.4.4">
+  <link rel="stylesheet" href="style.css?v=1.2.4.4">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/build/three.module.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+<div id="app-shell">
+
+  <!-- Novatrix Media opening experience -->
+  <div id="splash-overlay">
+    <iframe
+      id="splash-frame"
+      src="Files/splash/splash.html"
+      title="Novatrix Media introduction"
+    ></iframe>
+  </div>
+  <button id="fullscreenBtn" type="button" aria-label="Enter fullscreen" title="Fullscreen">⛶</button>
+  <div class="orientation-gate">
+    <span class="orientation-mark" aria-hidden="true">▱</span>
+    <h2>ROTATE YOUR PHONE</h2>
+    <p>HOOD is designed for landscape. Rotate your device or enter fullscreen. Add it to your Home Screen for browser-free play.</p>
+    <button id="orientationGateBtn" type="button">ENTER LANDSCAPE</button>
+  </div>
+
+  <div id="game" tabindex="0"></div>
+  <div id="loading">INITIALIZING</div>
+
+  <header class="hud top">
+    <h1>DODGE CHALLENGER R/T</h1>
+  </header>
+
+  <div class="hud route" id="routeHud">
+    <div class="route-name" id="routeName">ROUTE</div>
+    <div class="route-row"><span>LOCATION</span><strong id="currentLocation">—</strong></div>
+    <div class="route-row"><span>REMAINING</span><strong id="routeLeft">—</strong></div>
+    <div class="route-row"><span>TIME LEFT</span><strong id="routeEta">—</strong></div>
+    <div class="route-track"><div id="routeFill"></div></div>
+    <div id="sprintHud" class="sprint-hud" hidden>
+      <div class="sprint-hud-top">
+        <span>CHECKPOINT</span>
+        <strong id="hudCheckpointCount">0/4</strong>
+      </div>
+      <div class="sprint-hud-next">
+        <span>NEXT</span>
+        <strong id="hudNextCheckpoint">Ngara / Quarry</strong>
+      </div>
+    </div>
+    <button id="menuBtn" type="button" aria-label="Open game menu" title="Menu (Esc)">MENU</button>
+  </div>
+
+  <section id="pauseOverlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+    <div class="overlay-panel">
+      <div id="menuHome" class="menu-view">
+        <p class="overlay-kicker">HOOD MENU</p>
+        <h2 id="pauseTitle">Drive paused</h2>
+        <div class="overlay-actions menu-options">
+          <button id="resumeBtn" class="overlay-primary" type="button">Resume driving</button>
+          <button id="pauseRoutesBtn" class="overlay-secondary" type="button">Change route</button>
+          <button id="openDashboardBtn" class="overlay-secondary" type="button">Open dashboard</button>
+          <button id="openControlsBtn" class="overlay-secondary" type="button">Controls</button>
+        </div>
+      </div>
+
+      <section id="dashboardView" class="menu-view" aria-labelledby="dashboardTitle" hidden>
+        <p class="overlay-kicker">DRIVER PROFILE</p>
+        <h2 id="dashboardTitle">Dashboard</h2>
+        <div class="dashboard-grid">
+          <div class="dashboard-block">
+            <h3>THIS DRIVE</h3>
+            <div class="route-row"><span>SESSION DISTANCE</span><strong id="sessionDistance">0.00 KM</strong></div>
+            <div class="route-row"><span>ACTIVE TIME</span><strong id="sessionTime">0:00</strong></div>
+            <div class="route-row"><span>ROUTE</span><strong id="dashboardRoute">—</strong></div>
+            <div class="route-row"><span>LOCATION</span><strong id="dashboardLocation">—</strong></div>
+            <div class="route-row"><span>REMAINING</span><strong id="dashboardRemaining">—</strong></div>
+            <div class="route-row"><span>TIME LEFT</span><strong id="dashboardEta">—</strong></div>
+          </div>
+          <div class="dashboard-block">
+            <h3>VEHICLE</h3>
+            <div class="route-row"><span>SPEED</span><strong id="dashboardSpeed">0 KM/H</strong></div>
+            <div class="route-row"><span>ENGINE</span><strong id="dashboardRpm">0 RPM</strong></div>
+            <div class="route-row"><span>GEAR</span><strong id="dashboardGear">N</strong></div>
+            <div class="route-row"><span>NITRO</span><strong id="dashboardNitro">100%</strong></div>
+          </div>
+          <div class="dashboard-block">
+            <h3>CAREER</h3>
+            <div class="route-row"><span>ALL-CAR DISTANCE</span><strong id="lifetimeDistance">0.0 KM</strong></div>
+            <div class="route-row"><span>ALL-CAR TIME</span><strong id="lifetimeTime">0:00</strong></div>
+            <div class="route-row"><span>ALL-CAR SESSIONS</span><strong id="sessionCount">0</strong></div>
+            <div class="route-row"><span>DODGE DISTANCE</span><strong id="dodgeDistance">0.0 KM</strong></div>
+            <div class="route-row"><span>DODGE ACTIVE TIME</span><strong id="dodgeTime">0:00</strong></div>
+            <div class="route-row"><span>DODGE SESSIONS</span><strong id="dodgeSessions">0</strong></div>
+            <div class="route-row"><span>SUBARU DISTANCE</span><strong id="subaruDistance">0.0 KM</strong></div>
+            <div class="route-row"><span>SUBARU ACTIVE TIME</span><strong id="subaruTime">0:00</strong></div>
+            <div class="route-row"><span>SUBARU SESSIONS</span><strong id="subaruSessions">0</strong></div>
+            <div class="route-row"><span>DODGE SPRINT BEST</span><strong id="dodgeSprintBest">—</strong></div>
+            <div class="route-row"><span>SUBARU SPRINT BEST</span><strong id="subaruSprintBest">—</strong></div>
+          </div>
+          <div class="dashboard-block" id="sprintDetails" hidden>
+            <h3>SPRINT</h3>
+            <div class="route-row"><span>CHECKPOINT</span><strong id="dashboardCheckpoint">—</strong></div>
+            <div class="route-row"><span>NEXT UP</span><strong id="sprintCheckpointName">—</strong></div>
+            <div class="route-row"><span>ELAPSED</span><strong id="sprintTime">00:00.0</strong></div>
+          </div>
+        </div>
+        <div class="dashboard-block sprint-records-block">
+          <h3>SPRINT RECORDS</h3>
+          <div id="sprintRecords" class="sprint-records"><p>No completed sprints.</p></div>
+        </div>
+        <div class="overlay-actions"><button class="overlay-secondary menuBackBtn" type="button">Back to menu</button></div>
+      </section>
+
+      <section id="controlsView" class="menu-view" aria-labelledby="controlsTitle" hidden>
+        <p class="overlay-kicker">INPUT GUIDE</p>
+        <h2 id="controlsTitle">Controls</h2>
+        <div class="controls-grid">
+          <div><h3>KEYBOARD</h3><p>W / ↑ accelerate</p><p>S / ↓ brake or reverse</p><p>A D / ← → steer</p><p>Space drift · Shift / N nitro</p><p>C / V cameras · L headlights</p><p>Esc / P menu · R radio</p></div>
+          <div><h3>TOUCH & CONTROLLER</h3><p>Touch pedals and steering buttons</p><p>Hold Drift or Turbo to activate</p><p>Gamepad: left stick steer</p><p>Triggers accelerate and brake</p><p>Controller buttons: drift and nitro</p><p>Phone tilt steering can be enabled</p></div>
+        </div>
+        <div class="overlay-actions"><button class="overlay-secondary menuBackBtn" type="button">Back to menu</button></div>
+      </section>
+    </div>
+  </section>
+
+  <section id="resultsOverlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+    <div class="overlay-panel">
+      <p class="overlay-kicker" id="resultStatus">SPRINT COMPLETE</p>
+      <h2 id="resultTitle">Finish recorded.</h2>
+      <div class="result-times">
+        <div><span>YOUR TIME</span><strong id="resultTime">0.0 S</strong></div>
+        <div><span>PERSONAL BEST</span><strong id="resultBest">0.0 S</strong></div>
+      </div>
+      <div class="overlay-actions">
+        <button id="resultRetryBtn" class="overlay-primary" type="button">Retry sprint</button>
+        <button id="resultRoutesBtn" class="overlay-secondary" type="button">Choose route</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="checkpointNotice" class="checkpoint-notice" role="status" aria-live="polite" hidden>
+    <span>CHECKPOINT REACHED</span>
+    <strong id="checkpointNoticeName">—</strong>
+  </div>
+
+  <div class="hud speed">
+    <strong id="speed">000</strong><span>KM/H</span>
+    <div class="rpm"><div id="rpmFill"></div></div>
+    <span id="rpmText">0 RPM</span>
+    <div class="gear" id="gear">N</div>
+  </div>
+
+  <div id="help">
+    ↑ — THROTTLE<br>
+    ↓ — BRAKE<br>
+    ← → — STEER<br>
+    SPACE — DRIFT<br>
+    SHIFT — NITRO<br>
+    C — CAMERA · R — RADIO<br>
+    TILT PHONE — STEER<br>
+    DRAG TO PAN<br>
+    PINCH TO WIDEN<br>
+    L — LIGHTS
+  </div>
+
+  <div class="drive-controls">
+    <button id="driftBtn" class="drive-btn">
+      <span>DRIFT</span><small>HOLD</small>
+    </button>
+    <button id="turboBtn" class="drive-btn">
+      <span>⚡ TURBO</span><small>HOLD TO BOOST</small>
+    </button>
+    <button id="camBtn" class="drive-btn">
+      <span>📷 CAMERA</span><small>TAP TO CHANGE VIEW</small>
+    </button>
+  </div>
+
+  <div class="mobile-drive-controls" aria-label="Touch driving controls">
+    <div class="mobile-steering-fallback">
+      <button id="steerLeftBtn" class="mobile-control" type="button" aria-label="Steer left">◀</button>
+      <button id="steerRightBtn" class="mobile-control" type="button" aria-label="Steer right">▶</button>
+    </div>
+    <div class="mobile-pedals">
+      <button id="brakeBtn" class="mobile-control mobile-brake" type="button" aria-label="Brake"><span>▼</span><small>BRAKE</small></button>
+      <button id="throttleBtn" class="mobile-control mobile-throttle" type="button" aria-label="Accelerate"><span>▲</span><small>GAS</small></button>
+    </div>
+  </div>
+
+  <div class="boost-panel">
+    <div class="boost-heading">
+      <span>NITRO</span><span id="boostPercent">100%</span>
+    </div>
+    <div class="boost-track"><div id="boostFill"></div></div>
+  </div>
+
+  <!-- HOOD Radio mounts here -->
+  <div id="hood-radio"></div>
+</div>
+
+  <!-- Splash <-> engine communication -->
+  <script>
+    (() => {
+      const LOG = "[HOOD Parent]";
+      const overlay = document.getElementById("splash-overlay");
+      const frame = document.getElementById("splash-frame");
+      const loading = document.getElementById("loading");
+      if (new URLSearchParams(window.location.search).has("picker")) {
+        frame.src = "Files/splash/splash.html?picker=1";
+      }
+      if (new URLSearchParams(window.location.search).has("hoodFlow") || new URLSearchParams(window.location.search).has("menu")) {
+        overlay.style.display = "none";
+      }
+
+      let startRequested = false;
+      let sessionStarted = false;
+      let routeSelectionMade = false;
+      let lastLoad = null;
+
+      function post(message) {
+        if (!frame?.contentWindow) return;
+        frame.contentWindow.postMessage(message, window.location.origin);
+      }
+
+      function notifySplashGameReady() {
+        if (window.__game?.ready !== true) return;
+        post({ type: "HOOD_GAME_READY" });
+      }
+
+      function syncSplash() {
+        if (lastLoad) post(lastLoad);
+        notifySplashGameReady();
+        if (window.__game?.cars) {
+          post({ type: "HOOD_CARS", cars: window.__game.cars, defaultCar: window.__game.defaultCar });
+        }
+        if (window.__game?.routeReady === true) {
+          post({ type: "HOOD_ROUTE_READY", routeId: window.__game.route?.id });
+        }
+      }
+
+      frame.addEventListener("load", syncSplash);
+      window.addEventListener("hood:game-ready", notifySplashGameReady);
+      window.addEventListener("hood:cars", (e) => post({ type: "HOOD_CARS", ...e.detail }));
+
+      window.addEventListener("hood:load-progress", (e) => {
+        lastLoad = { type: "HOOD_LOAD_PROGRESS", ...e.detail };
+        post(lastLoad);
+      });
+      window.addEventListener("hood:route-progress", (e) => post({ type: "HOOD_ROUTE_PROGRESS", ...e.detail }));
+      window.addEventListener("hood:route-ready", (e) => post({ type: "HOOD_ROUTE_READY", ...e.detail }));
+      window.addEventListener("hood:route-error", (e) => post({ type: "HOOD_ROUTE_ERROR", ...e.detail }));
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== frame.contentWindow) return;
+        if (event.origin !== window.location.origin) return;
+
+        const message = event.data;
+        if (!message || typeof message.type !== "string") return;
+
+        if (message.type === "HOOD_SPLASH_LOADED") {
+          syncSplash();
+        }
+
+        if (message.type === "HOOD_SELECT_ROUTE" && typeof message.routeId === "string") {
+          routeSelectionMade = true;
+          window.dispatchEvent(
+            new CustomEvent("hood:select-route", {
+              detail: { routeId: message.routeId, carId: message.carId, mode: message.mode }
+            })
+          );
+        }
+
+        if (message.type === "HOOD_START_GAME") {
+          const g = window.__game || {};
+          if (g.ready !== true || g.routeReady !== true) {
+            post({ type: "HOOD_START_REJECTED", needsRoute: !g.routeLoading });
+            return;
+          }
+          startRequested = true;
+          window.__HOOD_START_REQUESTED = true;
+          window.focus();
+          window.dispatchEvent(new Event("hood:start-requested"));
+        }
+      });
+
+      function dismissSplash() {
+        if (sessionStarted) return;
+        sessionStarted = true;
+        document.body.classList.add("driving");
+        post({ type: "HOOD_SESSION_STARTED" });
+
+        const route = window.__game?.route;
+        const routeName = document.getElementById("routeName");
+        if (route && routeName) {
+          routeName.textContent = route.short.toUpperCase() + " · " + route.name.toUpperCase();
+        }
+
+        overlay.classList.add("dismissed");
+        setTimeout(() => { overlay.style.display = "none"; }, 650);
+        window.focus();
+      }
+
+      window.addEventListener("hood:session-started", dismissSplash);
+
+      const splashStartWatch = setInterval(() => {
+        if (window.__game?.started) {
+          dismissSplash();
+          clearInterval(splashStartWatch);
+        }
+      }, 100);
+
+      window.addEventListener("hood:boot-error", (event) => {
+        loading.textContent = "FAILED TO LOAD — " + (event.detail?.message || "CHECK CONSOLE");
+        loading.style.opacity = "1";
+        loading.style.display = "grid";
+        post({ type: "HOOD_GAME_ERROR", message: event.detail?.message });
+      });
+
+      notifySplashGameReady();
+    })();
+  </script>
+
+  <script src="src/main.js?v=1.2.4.4" type="module"></script>
+  <script src="music/radio.js?v=1.2.4.4" type="module"></script>
+</body>
+</html>
