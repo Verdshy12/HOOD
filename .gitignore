@@ -14,7 +14,7 @@ Thumbs.db
 *.bak-*
 
 # Locally stored music (do not redistribute without permission)
-Files/Media/music/*.mp3
+#Files/Media/music/*.mp3
 
 # Large source archives
 assets/Terrain/grass_ground_4k.blend.zip
