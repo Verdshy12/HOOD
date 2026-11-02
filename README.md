@@ -5,8 +5,6 @@
 
 What begins as a neighbourhood driving experience is being developed into something much bigger: a connected gaming ecosystem where players, vehicles, environments and experiences can eventually interact across different games and platforms.
 
-HOOD is part of the **Anemoia** project, developed under Nova Trix Media.
-
 ---
 
 ## The Vision
@@ -132,39 +130,6 @@ The architecture is being developed incrementally, with an emphasis on modularit
 
 ---
 
-## Repository Structure
-
-The repository is organised to support modular development and versioned releases.
-
-Individual release folders preserve the state of each published edition.
-
-```text
-Hood/
-├── README.md
-├── .gitignore
-├── release-notes/
-├── v1.2.1/
-├── v1.2.2/
-├── v1.2.3/
-├── v1.2.4/
-├── v1.2.5/
-└── ...
-```
-
-The actual project structure and supporting directories are maintained within each release.
-
-### Release Strategy
-
-The project follows a versioned release approach.
-
-- `release/v1.2` – Development and maintenance branch for v1.2.x.
-- `v1.2.5` – Current baseline edition.
-- Future releases introduce incremental improvements while preserving earlier versions.
-
-Major architectural changes will be introduced through subsequent release cycles.
-
----
-
 ## Project Philosophy
 
 HOOD is being developed as more than a conventional driving game.
@@ -177,26 +142,7 @@ Every release should improve the current experience while contributing towards t
 
 ---
 
-**HOOD**  
-*An evolving cross-platform gaming platform.*
-
-## HOOD v1.0.1
-
-HOOD is a Nairobi-focused driving experience with four gameplay modes:
-
-- **Career:** Create a profile, progress through events and unlock vehicles.
-- **Circuit:** Race closed tracks in three- or five-lap events.
-- **Sprint:** Complete checkpoint-based driving challenges.
-- **Free Drive:** Explore routes without race objectives.
-
-### Vehicle catalogue
-
-- Dodge
-- Subaru WRX STI
-- Nissan Skyline R34 GT-R
-- GTR-35
-
-### Release
+### HOOD Ni Yetu
 
 Version: **1.0.1**
 
