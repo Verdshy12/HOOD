@@ -17,6 +17,26 @@ export const CONFIG = {
       model: './models/dodge.glb',
       targetLength: 5.02,
       headingOffset: Math.PI,
+      careerUnlockAt: 1,
+      initials: 'V8',
+      type: 'V8 · MUSCLE',
+      cockpit: [-0.42, 1.18, 0.15],
+      chase: [0, 2.6, 7.2],
+      chaseLook: [0, 1.0, -4.0]
+    },
+
+    'dodge-track': {
+      name: 'Dodge Challenger · Track Spec',
+      model: './models/dodge.glb',
+      targetLength: 5.02,
+      headingOffset: Math.PI,
+      careerUnlockAt: 5,
+      initials: 'RT',
+      type: 'TRACK · V8',
+      bodyColor: '#182b45',
+      paintMaterials: ['dDodge_ChallengerRTShakerF7_2015Paint_Material1'],
+      displayStats: ['280 KM/H', 'TRACK TUNE'],
+      physics: { acceleration: 1.15, braking: 1.08, maxSpeed: 77.8 },
       cockpit: [-0.42, 1.18, 0.15],
       chase: [0, 2.6, 7.2],
       chaseLook: [0, 1.0, -4.0]
@@ -27,27 +47,54 @@ export const CONFIG = {
       model: './models/2006_subaru/subaru-wrx-sti.glb',
       targetLength: 4.42,
       headingOffset: Math.PI,
+      careerUnlockAt: 0,
+      initials: 'STI',
+      type: 'RALLY · AWD',
       cockpit: [-0.42, 1.12, 0.15],
       chase: [0, 2.6, 7.2],
       chaseLook: [0, 1.0, -4.0],
       steeringWheel: { split: { center: [-0.35, 0.90, -0.30], radius: 0.14, thickness: 0.11}, tilt: 25}
       },
 
+    'subaru-street': {
+      name: 'Subaru Impreza · Street Spec',
+      model: './models/2006_subaru/subaru-wrx-sti.glb',
+      targetLength: 4.42,
+      headingOffset: Math.PI,
+      careerUnlockAt: 3,
+      initials: 'ST',
+      type: 'STREET · AWD',
+      bodyColor: '#174d91',
+      paintMaterials: ['sub_1MAT_Impreza_WRX_Base_067'],
+      displayStats: ['245 KM/H', 'STREET TUNE'],
+      physics: { acceleration: 1.08, braking: 1.02, maxSpeed: 68 },
+      cockpit: [-0.42, 1.12, 0.15],
+      chase: [0, 2.6, 7.2],
+      chaseLook: [0, 1.0, -4.0],
+      steeringWheel: { split: { center: [-0.35, 0.90, -0.30], radius: 0.14, thickness: 0.11}, tilt: 25}
+    },
+
     nissan_x_trail: {
-      name: 'Nissan X Trail',
-      model: './models/nissan_x_trail.glb',
+      name: 'Nissan GTR35',
+      model: './models/GTR+35.glb',
       targetLength: 4.65,
       headingOffset: Math.PI,
+      careerUnlockAt: 2,
+      initials: 'NX',
+      type: 'GT · AWD',
       cockpit: [-0.30, 0.95, 0.10],
       chase: [0, 2.2, 5.8],
       chaseLook: [0, 0.8, -3.0]
     },
 
     'nissan-skyline-r34-gt-r': {
-      name: 'Nissan Skyline R34 GT-R',
+      name: 'Nissan Skyline R34',
       model: './models/nissan_skyline_r34_gt-r.glb',
       targetLength: 4.65,
       headingOffset: Math.PI,
+      careerUnlockAt: 7,
+      initials: 'R34',
+      type: 'TURBO · GT-R',
       wheelLayout: 'skyline-r34'
     }
   },

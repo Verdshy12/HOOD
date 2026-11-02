@@ -10,13 +10,25 @@ export const CAR = {
   // --- ARCADE FEEL (NFS-style). Change these first when tuning. ---
   grip: 1.15,            // multiplier on tyre grip: >1 = more forgiving than real life
   steerLock: 0.62,       // rad of front-wheel lock at standstill (falls off with speed)
+  acceleration: 1.0,
+  braking: 1.0,
+  maxSpeed: Infinity,
+
+  // Configurable engine torque curve.
+  peakTorque: 560,
+  peakTorqueRPM: 4300,
+  torqueFloor: 180,
+  torqueCurveWidth: 5200,
 };
-const torque = (rpm) => Math.max(180, 560 * (1 - ((rpm - 4300) / 5200) ** 2));
+const torque = (rpm, P) => Math.max(
+  P.torqueFloor,
+  P.peakTorque * (1 - ((rpm - P.peakTorqueRPM) / P.torqueCurveWidth) ** 2)
+);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const damp = (a, b, lambda, dt) => a + (b - a) * (1 - Math.exp(-lambda * dt));
 
-export function createVehicle(x = 0, z = 0, psi = 0) {
-  return { x, z, psi, vx: 0, vz: 0, yawRate: 0, rpm: CAR.idle, gear: 0, shiftTimer: 0,
+export function createVehicle(x = 0, z = 0, psi = 0, physics = CAR) {
+  return { x, z, psi, vx: 0, vz: 0, yawRate: 0, rpm: physics.idle, gear: 0, shiftTimer: 0,
            throttle: 0, nitro: 1, reverse: false,
            // read-only outputs (for HUD / audio / camera / animation)
            speed: 0, u: 0, v: 0, aLong: 0, aLat: 0, slip: 0, boosting: false, drifting: false,
@@ -29,16 +41,17 @@ export function createVehicle(x = 0, z = 0, psi = 0) {
 
 /** controls: {throttle 0..1, brake 0..1, steer -1..1, handbrake bool, nitro bool}
  *  surface:  {mu, roll}  (asphalt {1, .015}, grass {.55, .08}) */
-export function stepVehicle(s, c, surface, dt) {
+export function stepVehicle(s, c, surface, dt, physics = CAR) {
+  const P = physics;
   const mu = surface?.mu ?? 1, roll = surface?.roll ?? 0.015;
   const hand = !!c.handbrake;
 
   // --- 1. Steering -> yaw (uses last step's speed), then rotate heading
   const uPrev = s.u, au = Math.abs(uPrev);
-  const lock = CAR.steerLock / (1 + (au / 12) ** 1.3);
-  const A = mu * G * CAR.grip * (hand ? 0.35 : 1);                       // lateral grip limit (m/s^2)
+  const lock = P.steerLock / (1 + (au / 12) ** 1.3);
+  const A = mu * G * P.grip * (hand ? 0.35 : 1);                       // lateral grip limit (m/s^2)
   s.drifting = hand && au > 8;
-  let rT = (uPrev / CAR.wheelbase) * Math.tan(clamp(c.steer, -1, 1) * lock);
+  let rT = (uPrev / P.wheelbase) * Math.tan(clamp(c.steer, -1, 1) * lock);
   if (s.drifting) { rT *= 1.3; if (s.throttle > 0.3) rT += c.steer * s.throttle * 0.5; }
   else { const rMax = (1.25 * A) / Math.max(au, 2); rT = clamp(rT, -rMax, rMax); }   // understeer at the limit
   s.yawRate = damp(s.yawRate, rT, 10, dt);
@@ -58,29 +71,31 @@ export function stepVehicle(s, c, surface, dt) {
   s.nitro = clamp(s.nitro + (s.boosting ? -0.22 : 0.05) * dt, 0, 1);
 
   // --- 4. Engine + automatic gearbox
-  const ratio = (s.reverse ? CAR.reverseRatio : CAR.ratios[s.gear]) * CAR.final;
-  const driven = ((Math.abs(u) / CAR.wheelR) * 60 / (2 * Math.PI)) * ratio;
+  const ratio = (s.reverse ? P.reverseRatio : P.ratios[s.gear]) * P.final;
+  const driven = ((Math.abs(u) / P.wheelR) * 60 / (2 * Math.PI)) * ratio;
   s.shiftTimer = Math.max(0, s.shiftTimer - dt);
-  s.rpm = damp(s.rpm, Math.abs(u) < 4 ? CAR.idle + s.throttle * 3200 : Math.max(CAR.idle, driven), s.shiftTimer > 0 ? 7 : 14, dt);
+  s.rpm = damp(s.rpm, Math.abs(u) < 4 ? P.idle + s.throttle * 3200 : Math.max(P.idle, driven), s.shiftTimer > 0 ? 7 : 14, dt);
   if (!s.reverse && s.shiftTimer === 0) {
-    if (s.rpm > CAR.redline - 350 && s.gear < CAR.ratios.length - 1 && s.throttle > 0.3) { s.gear++; s.shiftTimer = 0.22; }
+    if (s.rpm > P.redline - 350 && s.gear < P.ratios.length - 1 && s.throttle > 0.3) { s.gear++; s.shiftTimer = 0.22; }
     else if (s.gear > 0 && driven < (s.throttle > 0.85 ? 3400 : 1800) && au > 3) { s.gear--; s.shiftTimer = 0.18; }
     else if (au < 2.5) s.gear = 0;
   }
-  s.rpm = clamp(s.rpm, CAR.idle, CAR.redline);
+  s.rpm = clamp(s.rpm, P.idle, P.redline);
 
-  let Fd = s.shiftTimer > 0 ? 0 : (torque(s.rpm) * s.throttle * (s.boosting ? 1.35 : 1) * ratio * CAR.eff) / CAR.wheelR;
-  Fd = Math.min(Fd, CAR.mass * G * mu * (hand ? 0.45 : 0.9));          // traction limit
-  if (s.reverse && -u > CAR.maxReverse) Fd = 0;
+  let Fd = s.shiftTimer > 0 ? 0 : (torque(s.rpm, P) * s.throttle * (s.boosting ? 1.35 : 1) * ratio * P.eff *P.acceleration) / P.wheelR;
+  Fd = Math.min(Fd, P.mass * G * mu * (hand ? 0.45 : 0.9));          // traction limit
+  if (s.reverse && -u > P.maxReverse) Fd = 0;
   const driveSign = s.reverse ? -1 : 1;
 
   // --- 5. Longitudinal integration (resistances can stop the car but never reverse it)
-  const Fdrag = CAR.drag * u * Math.abs(u);
-  let un = u + ((driveSign * Fd - Fdrag) / CAR.mass) * dt;
-  const Fres = brk * CAR.mass * G * mu * 1.05 + (hand ? 0.3 * CAR.mass * G * mu : 0)
-             + roll * CAR.mass * G + 0.04 * CAR.mass * G * (1 - s.throttle) * Math.min(1, au / 5);
-  const dec = (Fres / CAR.mass) * dt;
+  const Fdrag = P.drag * u * Math.abs(u);
+  let un = u + ((driveSign * Fd - Fdrag) / P.mass) * dt;
+  const Fres = brk * P.braking* P.mass * G * mu * 1.05 + (hand ? 0.3 * P.mass * G * mu : 0)
+             + roll * P.mass * G + 0.04 * P.mass * G * (1 - s.throttle) * Math.min(1, au / 5);
+  const dec = (Fres / P.mass) * dt;
   un = Math.abs(un) <= dec ? 0 : un - Math.sign(un) * dec;
+  // Forward speed limiter.
+  un = Math.min(un, P.maxSpeed);
 
   // --- 6. Lateral grip pulls sideways velocity to zero, limited by mu*g  (this IS the drift model)
   const slipNow = Math.abs(Math.atan2(v, Math.max(Math.abs(u), 0.5)));
@@ -134,7 +149,7 @@ export function stepVehicle(s, c, surface, dt) {
   s.u = un; s.v = vn; s.speed = Math.hypot(s.vx, s.vz);
   s.slip = Math.atan2(vn, Math.max(Math.abs(un), 0.1));
   s.wheelAngle = clamp(c.steer, -1, 1) * lock;
-  s.wheelSpin -= (un / CAR.wheelR) * dt;
+  s.wheelSpin -= (un / P.wheelR) * dt;
   return s;
 }
 

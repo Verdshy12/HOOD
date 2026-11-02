@@ -12,20 +12,45 @@ import { createInput } from './core/input.js?v=1.2.12';
 import {
   createVehicle, stepVehicle, applyImpact, CAR
 } from './car/vehicle.js';
+import { resolveVehiclePhysics }from './physics/vehicleProfiles.js';
 import { rigCar } from './car/carRig.js';
 import { StaticWorld, collideCar } from './world/staticWorld.js';
 import { buildRoadMesh, buildBuildingMesh, buildRouteMarkings } from './world/meshes.js';
-import { buildRoute, trackProgress } from './world/routes.js';
+import { buildRoute, sampleAt, trackProgress } from './world/routes.js';
 import { preloadMusic } from '../music/preload.js';
 import { rigSteeringWheel, flashMesh, scanNearby, previewSplit } from './car/steeringWheel.js';
 import { createCarLights } from './car/carLights.js';
 import { createStatsStore } from './core/persistence.js';
+import { createCareerStore } from './core/career.js';
+import {
+  createCircuitSession,
+  formatLapTime,
+  updateCircuitSession
+} from './core/circuit.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = THREE.MathUtils.clamp;
 const damp = THREE.MathUtils.damp;
 const emit = (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail }));
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
+function applyCarProfileAppearance(modelScene, carConfig) {
+  if (!carConfig.bodyColor || !Array.isArray(carConfig.paintMaterials)) return;
+  const paintMaterials = new Set(carConfig.paintMaterials);
+  const paint = (material) => {
+    if (!paintMaterials.has(material.name)) return material;
+    const variant = material.clone();
+    variant.color.set(carConfig.bodyColor);
+    variant.needsUpdate = true;
+    return variant;
+  };
+  modelScene.traverse((object) => {
+    if (!object.isMesh) return;
+    object.material = Array.isArray(object.material)
+      ? object.material.map(paint)
+      : paint(object.material);
+  });
+}
 
 // Only touches the DOM when the value actually changes.
 const text = (() => {
@@ -120,6 +145,7 @@ const game = {
   paused: false,
   userPaused: false,
   sprintFinished: false,
+  circuit: null,
   sessionDistanceM: 0,
   sessionActiveSeconds: 0
 };
@@ -128,7 +154,8 @@ window.__game = game;
 
 let startRequested = false;
 let loop = null;
-const statsStore = createStatsStore();
+const statsStore = createStatsStore(undefined, Object.keys(C.cars || {}));
+const careerStore = createCareerStore();
 let pendingDriveDistance = 0;
 let pendingDriveSeconds = 0;
 let statsFlushTimer = 0;
@@ -145,7 +172,6 @@ let cockpitPointerX = null;
 let cockpitPointerY = null;
 const touchPoints = new Map();
 let pinchDistance = 0;
-let tiltPermissionRequested = false;
 let headlightsOn = false;
 let lightsMsgUntil = 0;
 
@@ -173,6 +199,14 @@ function showMenuView(view) {
   $('menuHome').hidden = view !== 'home';
   $('dashboardView').hidden = view !== 'dashboard';
   $('controlsView').hidden = view !== 'controls';
+  if (view === 'home') {
+    const mode = game.session?.profileId
+      ? 'Career'
+      : game.session?.mode === 'race' ? 'Sprint'
+        : game.session?.mode === 'circuit' ? 'Circuit' : 'Free Drive';
+    text('pauseTitle', `${mode} menu`);
+    text('goToModeMenuBtn', `${mode} mode menu`);
+  }
   if (view === 'dashboard') updateDriverStats();
 }
 
@@ -190,6 +224,28 @@ function formatDriveTime(seconds) {
   return hours ? `${hours}H ${(minutes % 60).toString().padStart(2, '0')}M` : `${minutes}:${remainder}`;
 }
 
+function completeCareerEvent() {
+  if (!game.session?.profileId) return;
+  const progress = careerStore.completeEvent(
+    game.session.profileId,
+    game.session.routeId
+  );
+  if (progress.saved && !progress.persisted) {
+    console.warn('[HOOD] Career progress could not be saved to local storage.');
+  }
+}
+
+function eventLeaderboard(timeMs) {
+  const profile = game.session?.profileId
+    ? careerStore.snapshot().profiles.find((item) => item.id === game.session.profileId)
+    : null;
+  return {
+    driverName: profile?.name || 'YOU',
+    carName: game.carConfigs?.[game.session?.carId]?.name || game.session?.carId || 'VEHICLE',
+    timeMs
+  };
+}
+
 function updateDriverStats() {
   const carId = game.session?.carId;
   const saved = statsStore.snapshot();
@@ -204,9 +260,10 @@ function updateDriverStats() {
   text('lifetimeTime', formatDriveTime(cars.reduce((sum, item) => sum + item.activeSeconds, 0)));
   text('sessionCount', String(cars.reduce((sum, item) => sum + item.sessions, 0)));
   for (const id of ['dodge', 'subaru']) {
-    text(`${id}Distance`, `${(saved.cars[id].distanceM / 1000).toFixed(1)} KM`);
-    text(`${id}Time`, formatDriveTime(saved.cars[id].activeSeconds));
-    text(`${id}Sessions`, String(saved.cars[id].sessions));
+    const car = saved.cars[id] || { distanceM: 0, activeSeconds: 0, sessions: 0 };
+    text(`${id}Distance`, `${(car.distanceM / 1000).toFixed(1)} KM`);
+    text(`${id}Time`, formatDriveTime(car.activeSeconds));
+    text(`${id}Sessions`, String(car.sessions));
     const best = saved.sprints[game.session?.routeId]?.[id];
     text(`${id}SprintBest`, best ? `${best.bestSeconds.toFixed(1)} S` : '—');
   }
@@ -221,7 +278,7 @@ function updateDriverStats() {
     }
     for (const [routeId, routeCars] of sprintEntries) {
       const routeName = engine?.routesData.routes.find((route) => route.id === routeId)?.name || routeId;
-      for (const id of ['dodge', 'subaru']) {
+      for (const id of Object.keys(saved.cars)) {
         const record = routeCars[id];
         if (!record) continue;
         const row = document.createElement('div');
@@ -241,24 +298,124 @@ function updateDriverStats() {
   const sprintDetails = $('sprintDetails');
   if (sprintDetails) sprintDetails.hidden = !race;
   text('dashboardCheckpoint', race ? `${race.nextCheckpoint}/${race.checkpoints.length}` : '—');
+  const circuitDetails = $('circuitDetails');
+  if (circuitDetails) circuitDetails.hidden = !game.circuit;
+  const circuit = game.circuit?.snapshot;
+  text('dashboardCircuitLap', circuit
+    ? `${circuit.completedLaps}/${circuit.targetLaps}`
+    : '—');
+  text('dashboardCircuitTime', formatLapTime(circuit?.currentLapMs));
+  text('dashboardCircuitBest', formatLapTime(circuit?.bestLapMs));
 }
 
-function retrySprint() {
+function replayEvent() {
   if (!game.session || !game.route) return;
   const params = new URLSearchParams(location.search);
   params.set('route', game.session.routeId);
   params.set('car', game.session.carId);
-  params.set('mode', 'race');
+  params.set('mode', game.session.mode);
   params.set('autostart', '1');
-  location.search = params.toString();
+  location.assign(`${location.pathname}?${params}`);
 }
 
-function showSprintResult(timeSeconds, result) {
-  text('resultTime', `${timeSeconds.toFixed(1)} S`);
-  text('resultBest', `${result.bestSeconds.toFixed(1)} S`);
-  text('resultStatus', result.personalBest ? 'NEW PERSONAL BEST' : 'SPRINT COMPLETE');
+function showModeResult(timeSeconds, result) {
+  const isSprint = game.session?.mode === 'race';
+  const isCircuit = game.session?.mode === 'circuit' && result?.circuit;
+  text('resultTitle', isCircuit ? 'Circuit complete.' : isSprint ? 'Sprint complete.' : 'Route complete.');
+  text('resultStatus', result?.personalBest ? 'NEW PERSONAL BEST' : isCircuit ? 'CIRCUIT COMPLETE' : 'EVENT COMPLETE');
+  text(
+    'resultMessage',
+    isCircuit
+      ? `${result.circuit.targetLaps}-lap race on ${game.route?.name || 'this circuit'} complete.`
+      : isSprint
+        ? `Finish line reached. Your race on ${game.route?.name || 'this route'} is over. Replay now or return to the menu.`
+        : `${game.route?.name || 'Your route'} is complete. Return to the mode menu to start another drive or choose a different mode.`
+  );
+  const times = $('resultTimes');
+  if (times) times.hidden = !result?.saved && !isCircuit;
+  if (isCircuit) {
+    text('resultTimeLabel', 'EVENT TIME');
+    text('resultBestLabel', 'BEST LAP');
+    text('resultTime', formatLapTime(result.circuit.totalTimeMs));
+    text('resultBest', formatLapTime(result.circuit.bestLapMs));
+  } else if (result?.saved) {
+    text('resultTimeLabel', 'YOUR TIME');
+    text('resultBestLabel', 'PERSONAL BEST');
+    text('resultTime', `${timeSeconds.toFixed(1)} S`);
+    text('resultBest', `${result.bestSeconds.toFixed(1)} S`);
+  } else {
+    text('resultTimeLabel', 'YOUR TIME');
+    text('resultBestLabel', 'PERSONAL BEST');
+  }
+
+  const leaderboardPanel = $('resultLeaderboardPanel');
+  const leaderboardBody = $('resultLeaderboard');
+  const leaderboard = result?.leaderboard;
+  if (leaderboardPanel) leaderboardPanel.hidden = !leaderboard;
+  if (leaderboardBody) {
+    leaderboardBody.replaceChildren();
+    if (leaderboard) {
+      const row = document.createElement('tr');
+      for (const value of [
+        '1 / 1',
+        leaderboard.driverName || 'YOU',
+        leaderboard.carName || game.session?.carId || 'VEHICLE',
+        isCircuit
+          ? formatLapTime(result.circuit.totalTimeMs)
+          : `${(leaderboard.timeMs / 1000).toFixed(2)} S`
+      ]) {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.append(cell);
+      }
+      leaderboardBody.append(row);
+    }
+  }
+  const lapTimesPanel = $('resultLapTimesPanel');
+  const lapTimesList = $('resultLapTimes');
+  const lapTimes = isCircuit ? result.circuit.lapTimes : [];
+  if (lapTimesPanel) lapTimesPanel.hidden = !lapTimes.length;
+  if (lapTimesList) {
+    lapTimesList.replaceChildren();
+    lapTimes.forEach((lapTime, index) => {
+      const item = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = `LAP ${index + 1}`;
+      const value = document.createElement('strong');
+      value.textContent = formatLapTime(lapTime);
+      item.append(label, value);
+      lapTimesList.append(item);
+    });
+  }
+
+  const replayButton = $('resultReplayBtn');
+  if (replayButton) {
+    replayButton.disabled = false;
+    replayButton.textContent = 'Replay event';
+  }
   const results = $('resultsOverlay');
   if (results) results.hidden = false;
+  const isFreeDrive = game.session?.mode === 'free-drive' && !game.session?.profileId;
+  if (!isFreeDrive && leaderboard) startResultsPreview();
+}
+
+function goToModeMenu() {
+  const mode = game.session?.profileId
+    ? 'career'
+    : game.session?.mode === 'race' ? 'sprint'
+      : game.session?.mode === 'circuit' ? 'circuit' : 'free-drive';
+  const params = new URLSearchParams({ mode });
+  if (mode === 'career') {
+    params.set('profile', game.session.profileId);
+    params.set('careerMenu', '1');
+  }
+  flushDriveStats();
+  window.location.assign(`./index3.html?${params}`);
+}
+
+function goToMainMenu() {
+  flushDriveStats();
+  window.location.assign('./index3.html');
 }
 
 // ---------- Session lifecycle ----------
@@ -396,6 +553,51 @@ const syncCamera = () => {
 if ($('game')) new ResizeObserver(syncCamera).observe($('game'));
 addEventListener('orientationchange', () => setTimeout(syncCamera, 250));
 
+let resultsPreviewFrame = 0;
+function startResultsPreview() {
+  const points = game.route?.path?.pts;
+  if (!points?.length) return;
+  cancelAnimationFrame(resultsPreviewFrame);
+
+  const bounds = points.reduce((box, point) => ({
+    minX: Math.min(box.minX, point.x),
+    maxX: Math.max(box.maxX, point.x),
+    minZ: Math.min(box.minZ, point.z),
+    maxZ: Math.max(box.maxZ, point.z)
+  }), { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerZ = (bounds.minZ + bounds.maxZ) / 2;
+  const radius = Math.max(
+    70,
+    Math.hypot(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ) / 2
+  );
+  const distance = radius * 2.15;
+
+  if (game.carRoot) game.carRoot.visible = false;
+  document.body.classList.add('results-preview-active');
+  if ($('navigationMap')) $('navigationMap').hidden = true;
+  scene.fog.near = 0;
+  scene.fog.far = Math.max(C.gfx.fogFar, distance * 3);
+  camera.near = 1;
+  camera.far = Math.max(600, distance * 3);
+  camera.fov = 62;
+  camera.updateProjectionMatrix();
+
+  const animate = (time) => {
+    const angle = time * 0.000035;
+    camera.position.set(
+      centerX + Math.cos(angle) * distance * 0.82,
+      distance * 0.62,
+      centerZ + Math.sin(angle) * distance * 0.82
+    );
+    camera.lookAt(centerX, 0, centerZ);
+    renderer.render(scene, camera);
+    resultsPreviewFrame = requestAnimationFrame(animate);
+  };
+  resultsPreviewFrame = requestAnimationFrame(animate);
+}
+addEventListener('pagehide', () => cancelAnimationFrame(resultsPreviewFrame));
+
 const rig = new THREE.Group();
 scene.add(rig);
 
@@ -407,7 +609,7 @@ const input = createInput({
     if (!game.started || game.paused) return;
 
     if (k === 'c') toggleCamera();
-    if (k === 'm') changeRoute();
+    if (k === 'm') setUserPaused(true);
   }
 });
 
@@ -428,24 +630,53 @@ $('resumeBtn')?.addEventListener('click', () => {
   if (!game.started && game.routeReady) requestSessionStart();
   else setUserPaused(false);
 });
-$('pauseRoutesBtn')?.addEventListener('click', changeRoute);
 $('openDashboardBtn')?.addEventListener('click', () => showMenuView('dashboard'));
+$('goToModeMenuBtn')?.addEventListener('click', goToModeMenu);
+$('goToMainMenuBtn')?.addEventListener('click', goToMainMenu);
 $('openControlsBtn')?.addEventListener('click', () => showMenuView('controls'));
 document.querySelectorAll('.menuBackBtn').forEach((button) => button.addEventListener('click', () => showMenuView('home')));
-$('resultRetryBtn')?.addEventListener('click', retrySprint);
-$('resultRoutesBtn')?.addEventListener('click', changeRoute);
+$('resultReplayBtn')?.addEventListener('click', () => {
+  if (!$('resultReplayBtn')?.disabled) replayEvent();
+});
+$('resultModeMenuBtn')?.addEventListener('click', goToModeMenu);
+$('resultMainMenuBtn')?.addEventListener('click', goToMainMenu);
 addEventListener('pagehide', flushDriveStats);
 
 $('routesBtn')?.addEventListener('click', () => { if (game.started) changeRoute(); });
 $('camBtn')?.addEventListener('click', () => { if (game.started) toggleCamera(); });
 
-const armTilt = () => {
-  if (!game.started || tiltPermissionRequested || !mobileLayoutQuery.matches) return;
-  tiltPermissionRequested = true;
-  input.enableTiltSteering();
+let mobileSteeringMode = 'pads';
+const steeringModeSelector = $('mobileSteeringSelector');
+const syncSteeringModeUI = (status = '') => {
+  if (!steeringModeSelector) return;
+  steeringModeSelector.hidden = !mobileLayoutQuery.matches;
+  document.body.classList.toggle('tilt-steering', mobileSteeringMode === 'tilt');
+  $('padSteeringBtn')?.setAttribute('aria-pressed', String(mobileSteeringMode === 'pads'));
+  $('tiltSteeringBtn')?.setAttribute('aria-pressed', String(mobileSteeringMode === 'tilt'));
+  text('steeringModeStatus', status || (mobileSteeringMode === 'tilt' ? 'TILT ACTIVE' : 'PAD CONTROL'));
 };
-addEventListener('click', armTilt);
-addEventListener('touchend', armTilt, { passive: true });
+const selectPadSteering = () => {
+  input.disableTiltSteering();
+  mobileSteeringMode = 'pads';
+  syncSteeringModeUI('PAD CONTROL');
+};
+const selectTiltSteering = async () => {
+  if (!mobileLayoutQuery.matches) return;
+  if (await input.enableTiltSteering()) {
+    mobileSteeringMode = 'tilt';
+    syncSteeringModeUI('TILT ACTIVE');
+    return;
+  }
+  selectPadSteering();
+  syncSteeringModeUI('MOTION UNAVAILABLE · PADS ACTIVE');
+};
+$('padSteeringBtn')?.addEventListener('click', selectPadSteering);
+$('tiltSteeringBtn')?.addEventListener('click', selectTiltSteering);
+syncSteeringModeUI();
+mobileLayoutQuery.addEventListener('change', () => {
+  if (!mobileLayoutQuery.matches && mobileSteeringMode === 'tilt') selectPadSteering();
+  else syncSteeringModeUI();
+});
 
 const portraitGate = matchMedia('(max-width: 700px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait)');
 const syncPortraitPause = () => {
@@ -633,7 +864,7 @@ async function bootEngine() {
 
   if (want && !qs.has('picker')) {
     await loadRoute(want, { carId: qs.get('car') || undefined, mode: qs.get('mode') || undefined });
-    if (qs.has('autostart')) requestSessionStart();
+    if (qs.has('autostart') && game.routeReady) requestSessionStart();
   } else if (game.routes?.length && !qs.has('picker')) {
     // Pre-build the default route so clicking START DRIVING on the splash starts immediately
     await loadRoute(game.routes[0], { carId: game.defaultCar });
@@ -670,15 +901,86 @@ async function loadRoute(routeId, opts = {}) {
     const def = engine.routesData.routes.find((r) => r.id === routeId);
     if (!def) throw new Error('unknown route "' + routeId + '"');
     const route = buildRoute(def);
+    const params = new URLSearchParams(location.search);
+    const mode = opts.mode || params.get('mode') || 'free-drive';
+    if (mode === 'circuit') {
+      if (def.circuit !== true || def.mode !== 'circuit') {
+        throw new Error('Circuit mode requires a closed circuit route.');
+      }
+      const startPosition = sampleAt(
+        route.path,
+        Math.max(0, route.path.length - 6),
+        route.laneOffset
+      );
+      route.spawn = {
+        x: +startPosition.x.toFixed(2),
+        z: +startPosition.z.toFixed(2),
+        psi: +startPosition.psi.toFixed(3)
+      };
+    }
     game.route = route;
 
     const carId = opts.carId || game.defaultCar || C.defaultCar || 'dodge';
+    const profileId = params.get('career') === '1' ? params.get('profile') : null;
+    if (params.get('career') === '1' &&
+        (!profileId || !careerStore.snapshot().profiles.some((profile) => profile.id === profileId))) {
+      throw new Error('Career profile not found. Return to HOOD and choose a saved profile.');
+    }
+    if (profileId && !careerStore.isEventUnlocked(profileId, routeId)) {
+      throw new Error('Career event is locked. Complete an available event to unlock this route.');
+    }
+    if (profileId && !careerStore.isCarUnlocked(profileId, carId)) {
+      throw new Error('Career vehicle is locked. Complete more events to unlock this car.');
+    }
     const carCfg = { ...C.car, ...(game.carConfigs?.[carId] || {}) };
+    const carPhysics = resolveVehiclePhysics(carId, game.carConfigs?.[carId]?.physics);
     if (!game.carConfigs?.[carId]) {
       console.warn('[HOOD] No CONFIG.cars.' + carId + ' entry; using CONFIG.car.');
     }
-    game.session = { carId, routeId, mode: opts.mode || 'free-drive' };
+    game.session = {
+      carId,
+      routeId,
+      mode,
+      profileId
+    };
+    const isOpenFreeDrive = mode === 'free-drive' && !profileId;
+    const navigationMapEnabled = mode === 'free-drive' || mode === 'circuit';
+    const navigationMap = $('navigationMap');
+    if (navigationMap) {
+      navigationMap.hidden = !navigationMapEnabled;
+      navigationMap.setAttribute(
+        'aria-label',
+        isOpenFreeDrive
+          ? 'Nairobi road network map showing your position and direction'
+          : 'Route map showing your position and direction'
+      );
+    }
+    const navigationMapLabel = $('navigationMapLabel');
+    if (navigationMapLabel) navigationMapLabel.textContent = isOpenFreeDrive ? 'ROAD NETWORK' : 'ROUTE MAP';
+    document.body.classList.toggle('navigation-map-active', navigationMapEnabled);
+    const routeName = $('routeName');
+    if (routeName) routeName.textContent = isOpenFreeDrive ? 'FREE DRIVE · NAIROBI' : route.name;
+    for (const id of ['routeLeft', 'routeEta']) {
+      const row = $(id)?.parentElement;
+      if (row) row.hidden = isOpenFreeDrive;
+    }
+    const routeTrack = $('routeFill')?.parentElement;
+    if (routeTrack) routeTrack.hidden = isOpenFreeDrive;
     game.race = null;
+    game.circuit = null;
+    if (mode === 'circuit') {
+      const circuitSession = createCircuitSession({
+        route: def,
+        laps: Number(params.get('laps') || 3)
+      });
+      game.circuit = {
+        session: circuitSession,
+        snapshot: updateCircuitSession(circuitSession, route.spawn, 0),
+        elapsedMs: 0,
+        startedAtMs: null,
+        elapsedAtFinish: null
+      };
+    }
 
     camSet = makeCameraSet(carCfg);
     selectCamera(0);
@@ -707,8 +1009,8 @@ async function loadRoute(routeId, opts = {}) {
   }
 
   const roadMeshes = [
-    buildRoadMesh(tile.roads, { route, asphaltTexture, murramTexture }),
-    buildRouteMarkings(route)
+    buildRoadMesh(tile.roads, { route: isOpenFreeDrive ? null : route, asphaltTexture, murramTexture }),
+    ...(isOpenFreeDrive ? [] : [buildRouteMarkings(route)])
   ];
     added.push(...roadMeshes);
     scene.add(...roadMeshes);
@@ -726,11 +1028,13 @@ async function loadRoute(routeId, opts = {}) {
     const carTitle = document.querySelector('.hud.top h1');
     if (carTitle && carCfg.name) carTitle.textContent = carCfg.name.toUpperCase();
 
+    applyCarProfileAppearance(carGltf.scene, carCfg);
     const car = rigCar(carGltf.scene, {
       targetLength: carCfg.targetLength,
       headingOffset: carCfg.headingOffset,
       wheelLayout: carCfg.wheelLayout
     });
+    game.carRoot = car.root;
     rig.add(car.root);
     added.push(car.root);
 
@@ -780,7 +1084,7 @@ async function loadRoute(routeId, opts = {}) {
     };
     window.__hoodSplitShow = () => applySplit();
 
-    const s = createVehicle(route.spawn.x, route.spawn.z, route.spawn.psi);
+    const s = createVehicle(route.spawn.x, route.spawn.z, route.spawn.psi, carPhysics);
     game.sim = s;
 
     let impactShake = 0;
@@ -800,7 +1104,97 @@ async function loadRoute(routeId, opts = {}) {
     if (game.session.mode === 'race' && checkpoints.length) {
       game.race = { checkpoints, nextCheckpoint: 0, startedAt: 0, finishedAt: 0, elapsedSeconds: 0 };
     }
-    const endName = (route.landmarks.find((l) => l.at === 'end') || {}).name || 'the end of the route';
+    const endName = (route.landmarks?.find((l) => l.at === 'end') || {}).name || 'the end of the route';
+    const mapCanvas = $('navigationMapCanvas');
+    const mapContext = navigationMapEnabled ? mapCanvas?.getContext('2d') : null;
+    const mapPaths = isOpenFreeDrive
+      ? tile.roads
+        .filter((road) => Array.isArray(road.pts) && road.pts.length >= 4)
+        .map((road) => Array.from({ length: road.pts.length / 2 }, (_, index) => ({
+          x: road.pts[index * 2],
+          z: road.pts[index * 2 + 1]
+        })))
+      : [route.path.pts];
+    const mapPoints = mapPaths.flat();
+    const mapBounds = mapPoints.reduce((bounds, point) => ({
+      minX: Math.min(bounds.minX, point.x),
+      maxX: Math.max(bounds.maxX, point.x),
+      minZ: Math.min(bounds.minZ, point.z),
+      maxZ: Math.max(bounds.maxZ, point.z)
+    }), { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
+    const renderNavigationMap = (vehicle) => {
+      if (!navigationMapEnabled || !mapContext || !mapCanvas) return;
+      const rect = mapCanvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const pixelWidth = Math.round(rect.width * pixelRatio);
+      const pixelHeight = Math.round(rect.height * pixelRatio);
+      if (mapCanvas.width !== pixelWidth || mapCanvas.height !== pixelHeight) {
+        mapCanvas.width = pixelWidth;
+        mapCanvas.height = pixelHeight;
+      }
+      mapContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      mapContext.clearRect(0, 0, rect.width, rect.height);
+      const padding = 13;
+      const spanX = Math.max(1, mapBounds.maxX - mapBounds.minX);
+      const spanZ = Math.max(1, mapBounds.maxZ - mapBounds.minZ);
+      const scale = Math.min(
+        (rect.width - padding * 2) / spanX,
+        (rect.height - padding * 2) / spanZ
+      );
+      const offsetX = (rect.width - spanX * scale) / 2;
+      const offsetY = (rect.height - spanZ * scale) / 2;
+      const screenPoint = (x, z) => ({
+        x: offsetX + (x - mapBounds.minX) * scale,
+        y: offsetY + (z - mapBounds.minZ) * scale
+      });
+
+      mapContext.beginPath();
+      for (const path of mapPaths) {
+        path.forEach((point, index) => {
+          const mapped = screenPoint(point.x, point.z);
+          if (index === 0) mapContext.moveTo(mapped.x, mapped.y);
+          else mapContext.lineTo(mapped.x, mapped.y);
+        });
+      }
+      mapContext.strokeStyle = isOpenFreeDrive
+        ? 'rgba(95, 205, 244, .62)'
+        : 'rgba(95, 205, 244, .88)';
+      mapContext.lineWidth = isOpenFreeDrive ? 1.5 : 3;
+      mapContext.lineJoin = 'round';
+      mapContext.lineCap = 'round';
+      mapContext.stroke();
+
+      if (!isOpenFreeDrive) {
+        const start = screenPoint(mapPoints[0].x, mapPoints[0].z);
+        const end = screenPoint(mapPoints.at(-1).x, mapPoints.at(-1).z);
+        mapContext.fillStyle = '#6fe6a1';
+        mapContext.beginPath();
+        mapContext.arc(start.x, start.y, 3.5, 0, Math.PI * 2);
+        mapContext.fill();
+        if (route.circuit !== true) {
+          mapContext.fillStyle = '#ff735f';
+          mapContext.beginPath();
+          mapContext.arc(end.x, end.y, 3.5, 0, Math.PI * 2);
+          mapContext.fill();
+        }
+      }
+
+      const player = screenPoint(vehicle.x, vehicle.z);
+      mapContext.save();
+      mapContext.translate(player.x, player.y);
+      mapContext.rotate(vehicle.psi);
+      mapContext.beginPath();
+      mapContext.moveTo(0, -8);
+      mapContext.lineTo(-5, 6);
+      mapContext.lineTo(5, 6);
+      mapContext.closePath();
+      mapContext.fillStyle = '#fff';
+      mapContext.shadowColor = '#20c8ff';
+      mapContext.shadowBlur = 7;
+      mapContext.fill();
+      mapContext.restore();
+    };
     let controls = input.poll(0);
     let surface = world.surfaceAt(s.x, s.z);
 
@@ -808,7 +1202,7 @@ async function loadRoute(routeId, opts = {}) {
       const previousX = s.x;
       const previousZ = s.z;
       surface = world.surfaceAt(s.x, s.z);
-      stepVehicle(s, controls, surface, dt);
+      stepVehicle(s, controls, surface, dt, carPhysics);
 
       const hit = collideCar(world, s, applyImpact);
       if (hit > 1) {
@@ -824,6 +1218,33 @@ async function loadRoute(routeId, opts = {}) {
       statsFlushTimer += dt;
       dashboardUpdateTimer += dt;
       if (game.race?.startedAt && !game.race.finishedAt) game.race.elapsedSeconds += dt;
+      if (game.circuit && game.circuit.snapshot.status !== 'finished') {
+        const circuit = game.circuit;
+        const previousStatus = circuit.snapshot.status;
+        circuit.elapsedMs += dt * 1000;
+        circuit.snapshot = updateCircuitSession(
+          circuit.session,
+          { x: s.x, z: s.z },
+          circuit.elapsedMs
+        );
+        if (previousStatus === 'ready' && circuit.snapshot.status === 'racing') {
+          circuit.startedAtMs = circuit.session.lapStartedAt;
+        }
+        if (circuit.snapshot.status === 'finished') {
+          circuit.elapsedAtFinish = circuit.elapsedMs - circuit.startedAtMs;
+          completeCareerEvent();
+          flushDriveStats();
+          game.sprintFinished = true;
+          syncRunState();
+          showModeResult(circuit.elapsedAtFinish / 1000, {
+            circuit: {
+              ...circuit.snapshot,
+              totalTimeMs: circuit.elapsedAtFinish
+            },
+            leaderboard: eventLeaderboard(circuit.elapsedAtFinish)
+          });
+        }
+      }
       if (statsFlushTimer >= 3) {
         flushDriveStats();
         statsFlushTimer = 0;
@@ -854,21 +1275,26 @@ async function loadRoute(routeId, opts = {}) {
       });
 
       // Route progress (guarded for optional DOM nodes)
-      prog = trackProgress(route.path, s.x, s.z, prog.s);
-      const left = Math.max(0, route.path.length - prog.s);
+      if (!isOpenFreeDrive) prog = trackProgress(route.path, s.x, s.z, prog.s);
+      const left = isOpenFreeDrive ? 0 : Math.max(0, route.path.length - prog.s);
       const remainingText = left > 950 ? (left / 1000).toFixed(2) + ' KM' : Math.round(left / 10) * 10 + ' M';
       const etaSeconds = Math.ceil(left / Math.max(s.speed, 5));
       const etaText = `${String(Math.floor(etaSeconds / 60)).padStart(2, '0')}:${String(etaSeconds % 60).padStart(2, '0')}`;
       const passedLandmarks = routeLandmarks.filter((landmark) => landmark.s <= prog.s);
-      const locationText = passedLandmarks.at(-1)?.name || routeLandmarks[0]?.name || route.name;
-      text('routeLeft', remainingText);
+      const locationText = isOpenFreeDrive
+        ? 'Nairobi road network'
+        : passedLandmarks.at(-1)?.name || routeLandmarks[0]?.name || route.name;
+      if (!isOpenFreeDrive) {
+        text('routeLeft', remainingText);
+        text('routeEta', etaText);
+      }
       text('currentLocation', locationText);
-      text('routeEta', etaText);
       game.currentLocation = locationText;
-      game.routeRemaining = remainingText;
-      game.routeEta = etaText;
+      game.routeRemaining = isOpenFreeDrive ? '—' : remainingText;
+      game.routeEta = isOpenFreeDrive ? '—' : etaText;
       const routeFill = $('routeFill');
-      if (routeFill) routeFill.style.width = (prog.s / route.path.length) * 100 + '%';
+      if (routeFill && !isOpenFreeDrive) routeFill.style.width = (prog.s / route.path.length) * 100 + '%';
+      renderNavigationMap(s);
 
       const race = game.race;
       if (race?.startedAt) {
@@ -876,7 +1302,7 @@ async function loadRoute(routeId, opts = {}) {
 
         while (race.nextCheckpoint < race.checkpoints.length) {
           const checkpoint = race.checkpoints[race.nextCheckpoint];
-          if (prog.s < checkpoint.s - 8 || Math.hypot(s.x - checkpoint.x, s.z - checkpoint.z) > 12) break;
+          if (prog.s < checkpoint.s - 8 || Math.hypot(s.x - checkpoint.x, s.z - checkpoint.z) > 16) break;
           race.nextCheckpoint++;
         }
 
@@ -906,12 +1332,38 @@ async function loadRoute(routeId, opts = {}) {
             ? race.checkpoints[race.nextCheckpoint].name
             : 'Finish line'
         );
+        const checkpointS = race.checkpoints[race.nextCheckpoint]?.s ?? route.path.length;
+        const guidancePoint = sampleAt(route.path, Math.min(checkpointS, prog.s + 35));
+        const dx = guidancePoint.x - s.x;
+        const dz = guidancePoint.z - s.z;
+        const targetHeading = Math.atan2(dx, -dz);
+        const relativeBearing = Math.atan2(
+          Math.sin(targetHeading - s.psi),
+          Math.cos(targetHeading - s.psi)
+        );
+        const arrow = $('checkpointArrow');
+        if (arrow) arrow.style.transform = `rotate(${relativeBearing}rad)`;
+        const distance = Math.max(0, checkpointS - prog.s);
+        text('hudCheckpointDistance', distance >= 1000
+          ? `${(distance / 1000).toFixed(1)} KM`
+          : `${Math.round(distance)} M`);
       }
-      if (!arrivedAt && left < 15 && prog.dist < 8 && (!race || race.nextCheckpoint === race.checkpoints.length)) {
+      const circuit = game.circuit?.snapshot;
+      if (circuit) {
+        const circuitHud = $('circuitHud');
+        if (circuitHud) circuitHud.hidden = false;
+        text('circuitLap', circuit.status === 'ready'
+          ? `START / ${circuit.targetLaps}`
+          : `${circuit.status === 'finished' ? circuit.completedLaps : circuit.completedLaps + 1}/${circuit.targetLaps}`);
+        text('circuitLapTime', formatLapTime(circuit.currentLapMs));
+        text('circuitBestLap', formatLapTime(circuit.bestLapMs));
+      }
+      if (!isOpenFreeDrive && !game.circuit && !arrivedAt && left < 15 && prog.dist < 8 && (!race || race.nextCheckpoint === race.checkpoints.length)) {
         arrivedAt = performance.now();
-      }
-      if (race?.startedAt) {
-        if (arrivedAt && !race.finishedAt) {
+        completeCareerEvent();
+        let result = null;
+        const eventTimeSeconds = race?.elapsedSeconds ?? game.sessionActiveSeconds;
+        if (race?.startedAt) {
           race.finishedAt = arrivedAt;
           race.elapsedAtFinish = race.elapsedSeconds;
           race.result = statsStore.recordSprint({
@@ -921,13 +1373,21 @@ async function loadRoute(routeId, opts = {}) {
             checkpointsPassed: race.nextCheckpoint,
             totalCheckpoints: race.checkpoints.length
           });
-          flushDriveStats();
-          if (race.result.saved) {
-            game.sprintFinished = true;
-            syncRunState();
-            showSprintResult(race.elapsedAtFinish, race.result);
-          }
+          result = {
+            ...race.result,
+            leaderboard: eventLeaderboard(race.elapsedAtFinish * 1000)
+          };
+        } else if (game.session.mode !== 'free-drive') {
+          result = {
+            leaderboard: eventLeaderboard(eventTimeSeconds * 1000)
+          };
         }
+        flushDriveStats();
+        game.sprintFinished = true;
+        syncRunState();
+        showModeResult(eventTimeSeconds, result);
+      }
+      if (race?.startedAt) {
         const elapsed = race.finishedAt ? race.elapsedAtFinish : race.elapsedSeconds;
         const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
         const seconds = (elapsed % 60).toFixed(1).padStart(4, '0');
@@ -1085,6 +1545,11 @@ async function loadRoute(routeId, opts = {}) {
     game.world = null;
     game.sim = null;
     game.race = null;
+    game.circuit = null;
+    game.carRoot = null;
+    const navigationMap = $('navigationMap');
+    if (navigationMap) navigationMap.hidden = true;
+    document.body.classList.remove('navigation-map-active');
     game.error = String(e);
     console.error('[HOOD] Route load failed:', e);
     text('message', 'Failed to load route: ' + (e.message || e));

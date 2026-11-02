@@ -130,6 +130,13 @@
      return true;
    };
 
+   const disableTiltSteering = () => {
+     tiltActive = false;
+     tiltBaseline = null;
+     tiltSteer = 0;
+     document.body.classList.remove("tilt-ready", "tilt-unavailable");
+   };
+
    const onKeyDown = (event) => {
      const key = event.key.toLowerCase();
 
@@ -286,5 +293,6 @@
        },
 
        enableTiltSteering,
+       disableTiltSteering,
      };
  }

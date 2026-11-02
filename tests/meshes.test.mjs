@@ -1,5 +1,6 @@
 import fs from 'node:fs'; import * as THREE from 'three';
-import { buildRoadMesh, buildBuildingMesh } from '../src/world/meshes.js';
+import { buildRoadMesh, buildBuildingMesh, buildRouteMarkings } from '../src/world/meshes.js';
+import { buildRoute } from '../src/world/routes.js';
 const ok = (n, c, i = '') => { console.log((c ? 'PASS' : 'FAIL') + '  ' + n + (i ? '  [' + i + ']' : '')); if (!c) process.exitCode = 1; };
 const tile = JSON.parse(fs.readFileSync(new URL('../data/tiles/state-house.json', import.meta.url)));
 let t = performance.now(); const roads = buildRoadMesh(tile.roads); const rt = performance.now() - t;
@@ -20,4 +21,9 @@ ok('buildings sit on y=0 and top out at max height', Math.abs(bb.min.y) < 1e-4 &
 const b0 = tile.buildings[0]; const xs = b0.pts.filter((_, i) => i % 2 === 0), zs = b0.pts.filter((_, i) => i % 2 === 1);
 const g0 = buildBuildingMesh([b0]).geometry; g0.computeBoundingBox(); const e = g0.boundingBox;
 ok('footprint x/z extent matches source (no mirroring)', Math.abs(e.min.x - Math.min(...xs)) < 1e-3 && Math.abs(e.max.z - Math.max(...zs)) < 1e-3 && Math.abs(e.min.z - Math.min(...zs)) < 1e-3);
+const routeDefinitions = JSON.parse(fs.readFileSync(new URL('../data/routes/all-routes.json', import.meta.url))).routes;
+const sprint = buildRoute(routeDefinitions.find((route) => route.id === 'nairobi-ngara-sprint'));
+const markings = buildRouteMarkings(sprint);
+const markingY = markings.geometry.attributes.position.array.filter((_, i) => i % 3 === 1);
+ok('route markings no longer contain a tall finish post', Math.max(...markingY) < 1);
 console.log('INFO  whole map = 2 draw calls (roads + buildings)');

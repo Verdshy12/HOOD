@@ -3,11 +3,10 @@ import * as THREE from 'three';
 
 // Supports optimized wheel names, X-Trail wheel parts, and the Skyline's merged wheel geometry.
 const WHEEL_NAMES = {
-  // Nissan X-Trail wheel meshes, named by the source GLB export.
-  FL: /^(Wheel_FL|3DWheel Front L|Object_280|Object_250)$/i,
-  FR: /^(Wheel_FR|3DWheel Front R|Object_298|Object_244)$/i,
-  RL: /^(Wheel_RL|3DWheel Rear L|Object_271|Object_247)$/i,
-  RR: /^(Wheel_RR|3DWheel Rear R|Object_289|Object_241)$/i,
+  FL: /^(Wheel_FL|3DWheel Front L|Object_280|Object_250|Wheel[.]Ft[.]L)$/i,
+  FR: /^(Wheel_FR|3DWheel Front R|Object_298|Object_244|Wheel[.]Ft[.]R)$/i,
+  RL: /^(Wheel_RL|3DWheel Rear L|Object_271|Object_247|Wheel[.]Bk[.]L)$/i,
+  RR: /^(Wheel_RR|3DWheel Rear R|Object_289|Object_241|Wheel[.]Bk[.]R)$/i,
 };
 
 const WHEEL_PARTS = {
@@ -222,7 +221,15 @@ export function rigCar(modelScene, {
   const found = {};
   modelScene.traverse((o) => {
     for (const [k, re] of Object.entries(anchorNames)) {
-      if (!found[k] && re.test(o.name)) {
+      if (!found[k] && (
+        re.test(o.name) ||
+        ({
+          FL: 'wheelftl',
+          FR: 'wheelftr',
+          RL: 'wheelbkl',
+          RR: 'wheelbkr'
+        })[k] === String(o.name).replace(/[^a-z0-9]/gi, '').toLowerCase()
+      )) {
         found[k] = { anchor: o, parts: [o] };
       }
     }

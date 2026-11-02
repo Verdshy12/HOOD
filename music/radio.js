@@ -479,6 +479,14 @@ function restoreRoutePlayback() {
   return true;
 }
 
+function hasSavedRoutePlayback() {
+  try { return sessionStorage.getItem(ROUTE_PLAYBACK_KEY) !== null; }
+  catch (error) {
+    console.warn('[HOOD Radio] Could not check preserved playback:', error);
+    return false;
+  }
+}
+
 function togglePlay() {
   if (!state.enabled) return;
   if (state.wantPlay) pausePlayback();
@@ -704,7 +712,8 @@ function enable() {
 
 window.addEventListener('hood:session-started', enable);
 window.addEventListener('hood:route-switching', saveRoutePlayback);
-if (STANDALONE || (window.__game && window.__game.started)) enable();
+window.addEventListener('pagehide', saveRoutePlayback);
+if (STANDALONE || (window.__game && window.__game.started) || hasSavedRoutePlayback()) enable();
 
 // ---------- Public API ----------
 function publicState() {

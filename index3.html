@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>HOOD</title>
+  <link rel="stylesheet" href="./music/radio.css">
   <style>
     :root {
       --bg-deep: #120a0a;
@@ -656,10 +657,307 @@
         min-height: 52px;
       }
     }
+
+    #ui-shell { display: block; }
+    .screen { width: 100%; height: 100%; padding: 0; }
+    .screen.active { animation: hoodReveal .45s ease both; }
+    .home-screen, .flow-screen, .loading-screen {
+      position: absolute;
+      inset: 0;
+      overflow: auto;
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+    .home-screen {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(20px, 4vw, 56px) clamp(22px, 6vw, 84px) 25px;
+      background: linear-gradient(90deg, rgba(20, 10, 5, .76), rgba(20, 10, 5, .42) 48%, rgba(20, 10, 5, .05));
+    }
+    .hood-bar, .flow-header, .home-footer, .flow-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .hood-brand { display: flex; align-items: center; gap: 11px; }
+    .hood-brand img { width: 38px; height: 38px; object-fit: contain; }
+    .hood-brand strong { display: block; font-size: 15px; letter-spacing: .3em; }
+    .hood-brand small, .world-status, .home-footer, .flow-footer {
+      color: rgba(248, 240, 231, .63);
+      font: 600 10px/1.5 Arial, sans-serif;
+      letter-spacing: .19em;
+      text-transform: uppercase;
+    }
+    .world-status { display: flex; align-items: center; gap: 9px; }
+    .world-status i { width: 7px; height: 7px; border-radius: 50%; background: #6fe6a1; box-shadow: 0 0 14px #6fe6a1; }
+    .home-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(290px, 430px);
+      align-items: center;
+      gap: clamp(28px, 7vw, 100px);
+      width: min(100%, 1280px);
+      margin: auto;
+    }
+    .home-hero { max-width: 650px; }
+    .micro-label, .flow-kicker {
+      margin: 0 0 14px;
+      color: var(--accent);
+      font: 700 10px/1.4 Arial, sans-serif;
+      letter-spacing: .34em;
+      text-transform: uppercase;
+    }
+    .home-hero h2 {
+      margin: 0;
+      color: #fff7ee;
+      font: 900 clamp(3.2rem, 8vw, 7.5rem)/.86 Impact, "Arial Narrow", sans-serif;
+      letter-spacing: -.045em;
+      text-shadow: 0 12px 45px rgba(0,0,0,.38);
+    }
+    .home-hero h2 span { color: var(--accent); }
+    .home-hero > p:not(.micro-label) {
+      max-width: 440px;
+      margin: 22px 0 0;
+      color: rgba(255, 247, 238, .76);
+      font: 500 14px/1.7 Arial, sans-serif;
+    }
+    .home-stats { display: flex; gap: 27px; margin-top: 31px; }
+    .home-stats strong { display: block; font: 800 17px/1 Arial, sans-serif; }
+    .home-stats span { display: block; margin-top: 7px; color: rgba(255,255,255,.62); font: 700 9px/1.3 Arial, sans-serif; letter-spacing: .17em; }
+    .mode-menu { display: grid; gap: 10px; }
+    .mode-menu > .micro-label { margin-bottom: 4px; }
+    .mode-card-button {
+      display: grid;
+      grid-template-columns: 35px 1fr auto;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      min-height: 82px;
+      padding: 14px 18px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 13px;
+      color: #fff;
+      text-align: left;
+      background: rgba(11, 16, 20, .58);
+      backdrop-filter: blur(13px);
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .mode-card-button:hover, .mode-card-button:focus-visible {
+      transform: translateX(4px);
+      border-color: var(--accent);
+      background: rgba(24, 21, 18, .82);
+      outline: none;
+    }
+    .mode-index { color: var(--accent); font: 800 11px/1 Arial, sans-serif; letter-spacing: .12em; }
+    .mode-copy strong { display: block; font: 800 15px/1.2 Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+    .mode-copy small { display: block; margin-top: 5px; color: rgba(255,255,255,.64); font: 500 11px/1.4 Arial, sans-serif; }
+    .mode-arrow { color: var(--accent); font-size: 20px; }
+    .home-footer { border-top: 1px solid rgba(255,255,255,.18); padding-top: 12px; }
+    .flow-screen { padding: clamp(16px, 3vw, 38px) clamp(18px, 5vw, 66px); background: rgba(8, 12, 16, .84); }
+    .flow-header { max-width: 1240px; margin: 0 auto clamp(16px, 3vh, 30px); }
+    .flow-header > div { flex: 1; text-align: center; }
+    .flow-header h1 { margin: 0; font: 800 14px/1 Arial, sans-serif; letter-spacing: .22em; text-transform: uppercase; }
+    .flow-header p { margin: 7px 0 0; color: rgba(255,255,255,.58); font: 600 9px/1 Arial, sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+    .flow-back {
+      min-height: 42px;
+      padding: 0 14px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 9px;
+      color: var(--text);
+      background: rgba(255,255,255,.05);
+      font: 700 10px/1 Arial, sans-serif;
+      letter-spacing: .16em;
+      cursor: pointer;
+    }
+    .flow-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, .75fr);
+      gap: clamp(14px, 2.5vw, 30px);
+      width: min(100%, 1240px);
+      margin: 0 auto;
+    }
+    .flow-panel, .flow-aside {
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 17px;
+      background: linear-gradient(145deg, rgba(29,35,39,.94), rgba(13,17,20,.94));
+      box-shadow: 0 24px 70px rgba(0,0,0,.27);
+    }
+    .flow-panel { min-height: 440px; padding: clamp(20px, 3vw, 34px); }
+    .flow-view[hidden] { display: none; }
+    .flow-view h2 { margin: 0 0 9px; font: 800 clamp(1.7rem, 4vw, 2.7rem)/1 Impact, "Arial Narrow", sans-serif; letter-spacing: -.02em; }
+    .flow-description { margin: 0 0 23px; color: rgba(255,255,255,.62); font: 500 12px/1.6 Arial, sans-serif; }
+    .circuit-lap-setting { display: flex; align-items: center; gap: 12px; margin: -8px 0 18px; color: rgba(255,255,255,.62); font: 700 9px/1 Arial, sans-serif; letter-spacing: .14em; }
+    .circuit-lap-setting[hidden] { display: none; }
+    .circuit-lap-setting select { min-height: 36px; padding: 0 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; color: var(--text); background: rgba(0,0,0,.28); font: 800 10px/1 Arial, sans-serif; letter-spacing: .1em; }
+    .profile-list, .route-list, .garage-list, .career-events { display: grid; gap: 9px; }
+    .profile-card, .route-card, .garage-card, .career-event {
+      width: 100%;
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 15px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 11px;
+      color: var(--text);
+      background: rgba(255,255,255,.035);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .16s ease, background .16s ease, transform .16s ease;
+    }
+    .profile-card:hover, .route-card:hover, .garage-card:hover, .career-event:not(:disabled):hover,
+    .garage-card.selected { border-color: var(--accent); background: rgba(255,179,71,.09); transform: translateY(-1px); }
+    .profile-card strong, .route-card strong, .garage-card strong, .career-event strong { display: block; font: 800 13px/1.25 Arial, sans-serif; }
+    .profile-card small, .route-card small, .garage-card small, .career-event small { display: block; margin-top: 5px; color: rgba(255,255,255,.58); font: 600 9px/1.35 Arial, sans-serif; letter-spacing: .11em; text-transform: uppercase; }
+    .profile-initial, .car-chip {
+      display: grid;
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 10px;
+      color: var(--accent);
+      background: rgba(255,179,71,.12);
+      font: 800 14px/1 Arial, sans-serif;
+    }
+    .profile-form { display: grid; gap: 10px; margin-top: 18px; }
+    .profile-form[hidden] { display: none; }
+    .profile-form label { color: rgba(255,255,255,.68); font: 700 9px/1 Arial, sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+    .profile-form input {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 13px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 9px;
+      color: white;
+      background: rgba(0,0,0,.22);
+      font: 600 14px/1 Arial, sans-serif;
+    }
+    .profile-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .form-actions, .flow-actions { display: flex; gap: 9px; margin-top: 15px; }
+    .form-actions > *, .flow-actions > * { flex: 1; }
+    .flow-button {
+      min-height: 46px;
+      padding: 0 16px;
+      border: 1px solid rgba(255,255,255,.17);
+      border-radius: 9px;
+      color: #211408;
+      background: linear-gradient(180deg, #ffc66a, #e28b2c);
+      font: 800 10px/1 Arial, sans-serif;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .flow-button.secondary { color: var(--text); background: rgba(255,255,255,.045); }
+    .flow-button:disabled { opacity: .42; cursor: not-allowed; }
+    .form-message { min-height: 16px; margin: 0; color: #ffc66a; font: 600 10px/1.5 Arial, sans-serif; }
+    .profile-add { margin-top: 13px; width: 100%; }
+    .career-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 17px 0;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 11px;
+      background: rgba(255,255,255,.035);
+    }
+    .career-summary strong { display: block; font: 800 13px/1.2 Arial, sans-serif; }
+    .career-summary span { display: block; margin-top: 5px; color: rgba(255,255,255,.58); font: 700 9px/1.3 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    .career-events { margin-top: 9px; }
+    .career-event { min-height: 62px; }
+    .career-event:disabled { opacity: .45; cursor: not-allowed; }
+    .event-status { color: var(--accent); font: 800 9px/1 Arial, sans-serif; letter-spacing: .1em; }
+    .route-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .route-card { min-height: 122px; align-items: flex-start; flex-direction: column; justify-content: space-between; }
+    .route-card::before { content: ""; width: 100%; height: 3px; border-radius: 3px; background: linear-gradient(90deg, var(--accent), transparent); }
+    .route-distance { color: var(--accent); font: 800 10px/1 Arial, sans-serif; letter-spacing: .14em; }
+    .garage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .garage-card { min-height: 92px; }
+    .garage-card.locked { opacity: .42; cursor: not-allowed; }
+    .garage-card.locked:hover { transform: none; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.035); }
+    .garage-card > span:nth-child(2) { flex: 1; min-width: 0; }
+    .flow-aside { padding: 22px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+    .aside-art {
+      position: relative;
+      min-height: 170px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 12px;
+      background: radial-gradient(ellipse at center, rgba(255,179,71,.15), transparent 68%), rgba(0,0,0,.15);
+    }
+    .aside-art svg { width: 90%; height: 150px; overflow: visible; }
+    .track-path { fill: none; stroke: rgba(255,255,255,.22); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+    .track-glow { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 11 9; stroke-linecap: round; animation: trackFlow 2s linear infinite; }
+    .aside-tag { position: absolute; left: 13px; top: 12px; color: rgba(255,255,255,.56); font: 700 8px/1 Arial, sans-serif; letter-spacing: .18em; }
+    .aside-caption { margin: 17px 0 5px; color: var(--accent); font: 700 9px/1 Arial, sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+    .aside-title { margin: 0; font: 800 20px/1.1 Impact, "Arial Narrow", sans-serif; }
+    .aside-copy { margin: 9px 0 0; color: rgba(255,255,255,.59); font: 500 11px/1.6 Arial, sans-serif; }
+    .aside-stats { display: flex; gap: 19px; margin-top: 18px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,.1); }
+    .aside-stats strong { display: block; font: 800 14px/1 Arial, sans-serif; }
+    .aside-stats small { display: block; margin-top: 5px; color: rgba(255,255,255,.5); font: 700 8px/1 Arial, sans-serif; letter-spacing: .1em; }
+    .flow-footer { max-width: 1240px; margin: 18px auto 0; }
+    .loading-screen {
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: radial-gradient(ellipse at 68% 48%, rgba(187,97,36,.24), transparent 50%), rgba(11,14,17,.96);
+    }
+    .loading-screen.active { display: grid; }
+    .loading-screen[hidden] { display: none; }
+    .loading-panel { width: min(900px, 100%); display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; align-items: center; }
+    .loading-panel h2 { margin: 0; font: 900 clamp(2.4rem, 6vw, 5rem)/.9 Impact, sans-serif; letter-spacing: -.02em; }
+    .loading-panel h2 span { color: var(--accent); }
+    .loading-detail { margin-top: 14px; color: rgba(255,255,255,.6); font: 600 11px/1.6 Arial, sans-serif; letter-spacing: .09em; text-transform: uppercase; }
+    .loading-route-art { border: 1px solid rgba(255,255,255,.16); border-radius: 15px; background: rgba(255,255,255,.035); padding: 14px; }
+    .loading-route-art svg { width: 100%; height: auto; display: block; }
+    .loading-route-art path { fill: none; stroke: rgba(255,255,255,.24); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .loading-route-art .route-line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 14 12; animation: trackFlow 1.4s linear infinite; }
+    .loading-meter { height: 3px; margin-top: 22px; overflow: hidden; background: rgba(255,255,255,.13); }
+    .loading-meter i { display: block; width: 40%; height: 100%; background: var(--accent); animation: meterRun 1.7s ease-in-out infinite; }
+    .loading-steps { display: flex; gap: 15px; margin-top: 12px; color: rgba(255,255,255,.48); font: 700 8px/1 Arial, sans-serif; letter-spacing: .13em; }
+    @keyframes hoodReveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes trackFlow { to { stroke-dashoffset: -40; } }
+    @keyframes meterRun { from { transform: translateX(-120%); } to { transform: translateX(360%); } }
+
+    @media (max-width: 760px) {
+      .home-screen { padding: 18px 20px 14px; background: linear-gradient(90deg, rgba(20,10,5,.82), rgba(20,10,5,.48)); }
+      .home-grid { grid-template-columns: 1fr; gap: 22px; width: min(100%, 560px); }
+      .home-hero h2 { font-size: clamp(3rem, 11vw, 5rem); }
+      .home-hero > p:not(.micro-label) { margin-top: 12px; font-size: 12px; }
+      .home-stats { margin-top: 17px; }
+      .mode-card-button { min-height: 66px; padding: 10px 13px; }
+      .flow-screen { padding: 14px; }
+      .flow-layout { grid-template-columns: 1fr; }
+      .flow-panel { min-height: 0; padding: 20px; }
+      .flow-aside { display: none; }
+      .flow-footer { margin-top: 12px; }
+      .loading-panel { grid-template-columns: 1fr; gap: 19px; }
+      .loading-route-art svg { max-height: 180px; }
+    }
+    @media (max-width: 420px) {
+      .world-status, .home-footer span:last-child { display: none; }
+      .home-hero h2 { font-size: 3rem; }
+      .home-stats { gap: 17px; }
+      .route-list, .garage-list { grid-template-columns: 1fr; }
+      .route-card { min-height: 75px; }
+      .garage-card { min-height: 68px; }
+      .flow-header h1 { font-size: 11px; }
+    }
   </style>
   <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+  <style>
+    body.mode-selection .hood-radio { display: none; }
+  </style>
 </head>
-<body>
+<body class="mode-selection">
   <main id="stage">
     <div class="top-line"></div>
     <div class="bottom-line"></div>
@@ -668,115 +966,145 @@
     <div id="loading">LOADING</div>
 
     <div id="ui-shell">
-      <section id="intro-screen" class="screen active" aria-live="polite">
-        <div class="panel">
-          <div class="eyebrow-tag">HOOD</div>
-          <h2 class="intro-title">READY TO PLAY</h2>
-          <p class="intro-copy">Choose your mode, car, and drive.</p>
-          <button id="startBtn" class="primary-btn" type="button">Start</button>
+      <section id="intro-screen" class="screen home-screen active" aria-label="HOOD main menu">
+      <!--  <header class="hood-bar">
+          <div class="hood-brand">
+            <img src="Files/splash/novatrix.png" alt="">
+            <div><strong>HOOD</strong><small>NAIROBI · KENYA</small></div>
+          </div>
+          <div class="world-status"><i aria-hidden="true"></i> WORLD READY</div>
+        </header> -->
+        <div class="home-grid">
+          <div class="home-hero">
+            <p class="micro-label">THE STREETS ARE YOURS</p>
+            <h2><span>DRIVE</span><br>KWA HOOD.</h2>
+            <p>Build your name & discover Nairobi's routes.</p>
+            <div class="home-stats">
+              <div><strong>03</strong><span>LIVE ROUTES</span></div>
+              <div><strong id="home-garage-count">00</strong><span>GARAGE CARS</span></div>
+              <div><strong>03</strong><span>EVENT TO DRIVE IN</span></div>
+            </div>
+          </div>
+          <nav class="mode-menu" aria-label="Choose a game mode">
+            <p class="micro-label">CHOOSE YOUR EXPERIENCE</p>
+            <button class="mode-card-button" type="button" data-mode-choice="career">
+              <span class="mode-index">01</span><span class="mode-copy"><strong>Career mode</strong><small>Build a profile. Earn your next unlock.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="mode-card-button" type="button" data-mode-choice="circuit">
+              <span class="mode-index">02</span><span class="mode-copy"><strong>Circuit mode</strong><small>Race eight closed tracks in three- or five-lap events.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="mode-card-button" type="button" data-mode-choice="sprint">
+              <span class="mode-index">03</span><span class="mode-copy"><strong>Sprint mode</strong><small>Hit the checkpoints. Own the clock.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="mode-card-button" type="button" data-mode-choice="free-drive">
+              <span class="mode-index">04</span><span class="mode-copy"><strong>Free Drive</strong><small>Explore Nairobi. Choose your road and drive at your own pace.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+            </button>
+          </nav>
         </div>
+        <footer class="home-footer"><!--<span>ANEMOIA PRESENTS · HOOD</span>--><span>HOOD NI YETU</span></footer>
       </section>
 
-      <section id="setup-screen" class="screen" aria-live="polite">
-        <div class="panel">
-          <div class="setup-head">
-            <h2>Prepare</h2>
-            <button id="brandToggle" class="badge" type="button" aria-controls="brand-strip" aria-expanded="false" aria-label="Show Novatrix Media logo">HOOD</button>
+      <section id="setup-screen" class="screen flow-screen" aria-label="Game setup">
+        <header class="flow-header">
+          <button id="flowBackBtn" class="flow-back" type="button">BACK</button>
+          <div><h1 id="flow-heading">CAREER MODE</h1><p id="flow-subheading">DRIVER PROFILE</p></div>
+          <span class="flow-back" aria-hidden="true">HOOD</span>
+        </header>
+        <div class="flow-layout">
+          <main class="flow-panel">
+            <section id="profile-view" class="flow-view">
+              <p class="flow-kicker">CAREER · DRIVER PROFILE</p>
+              <h2>Who's driving?</h2>
+              <p class="flow-description">Choose your saved driver, or create a profile to begin a new career.</p>
+              <div id="profile-list" class="profile-list"></div>
+              <form id="create-profile-form" class="profile-form" hidden>
+                <label for="profile-name">Driver name</label>
+                <input id="profile-name" name="name" maxlength="24" autocomplete="nickname" placeholder="Enter a name" required>
+                <p id="profile-message" class="form-message" aria-live="polite"></p>
+                <div class="form-actions">
+                  <button id="cancel-profile" class="flow-button secondary" type="button">CANCEL</button>
+                  <button class="flow-button" type="submit">CREATE PROFILE</button>
+                </div>
+              </form>
+              <button id="show-create-profile" class="flow-button secondary profile-add" type="button">+ ADD DRIVER PROFILE</button>
+            </section>
+
+            <section id="career-hub-view" class="flow-view" hidden>
+              <p class="flow-kicker">CAREER · EVENT MAP</p>
+              <h2 id="career-heading">Your career</h2>
+              <p class="flow-description">Complete events to open new routes and add cars to your garage.</p>
+              <div class="career-summary">
+                <div><strong id="career-profile-name">DRIVER</strong><span id="career-rank">ROOKIE DRIVER</span></div>
+                <div><strong id="career-event-count">0</strong><span>EVENTS CLEARED</span></div>
+              </div>
+              <p id="career-storage-warning" class="flow-description" hidden>This profile could not be saved by this browser and will only last for this session.</p>
+              <div id="career-events" class="career-events"></div>
+            </section>
+
+            <section id="route-view" class="flow-view" hidden>
+              <p class="flow-kicker" id="route-kicker">CIRCUIT · ROUTE SELECTION</p>
+              <h2 id="route-heading">Pick your route</h2>
+              <p class="flow-description" id="route-description">Choose any open road to explore.</p>
+              <div id="circuit-lap-setting" class="circuit-lap-setting" hidden>
+                <label for="circuit-laps">LAP COUNT</label>
+                <select id="circuit-laps">
+                  <option value="3">3 LAPS</option>
+                  <option value="5">5 LAPS</option>
+                </select>
+              </div>
+              <div id="route-list" class="route-list"></div>
+            </section>
+
+            <section id="garage-view" class="flow-view" hidden>
+              <p class="flow-kicker">SHARED GARAGE · VEHICLE SELECTION</p>
+              <h2>Choose Car</h2>
+              <p id="garage-description" class="flow-description">Pick a car for the selected route.</p>
+              <div id="garage-list" class="garage-list"></div>
+              <div class="flow-actions">
+                <button id="garage-back" class="flow-button secondary" type="button">BACK</button>
+                <button id="launch-game" class="flow-button" type="button" disabled>LOAD SESSION</button>
+              </div>
+            </section>
+          </main>
+          <aside class="flow-aside" aria-label="Route preview">
+            <div>
+              <div class="aside-art">
+                <span class="aside-tag">HOOD · ROUTE NETWORK</span>
+                <svg viewBox="0 0 300 160" aria-hidden="true">
+                  <path class="track-path" d="M22 104 C44 104 42 46 76 46 H112 C143 46 137 118 170 118 H204 C234 118 225 65 256 65 H278"/>
+                  <path class="track-glow" d="M22 104 C44 104 42 46 76 46 H112 C143 46 137 118 170 118 H204 C234 118 225 65 256 65 H278"/>
+                  <circle cx="22" cy="104" r="5" fill="#ffb347"/><circle cx="278" cy="65" r="5" fill="#6fe6a1"/>
+                </svg>
+              </div>
+              <p id="aside-caption" class="aside-caption">YOUR NEXT MILE</p>
+              <h3 id="aside-title" class="aside-title">A city built to drive.</h3>
+              <p id="aside-copy" class="aside-copy">Routes, vehicles and events connect as your HOOD career grows.</p>
+            </div>
+            <div class="aside-stats">
+              <div><strong>08</strong><small>NGARA CIRCUITS</small></div><div><strong id="career-garage-count">00</strong><small>GARAGE CARS</small></div><div><strong>01</strong><small>SPRINT READY</small></div>
+            </div>
+          </aside>
+        </div>
+        <footer class="flow-footer"><span>PROGRESS IS SAVED TO DEVICE</span><span>TWEET ABOUT US.</span></footer>
+      </section>
+
+      <section id="loading-screen" class="screen loading-screen" aria-live="polite" hidden>
+        <div class="loading-panel">
+          <div>
+            <p class="micro-label">HOOD · SESSION BUILD</p>
+            <h2>SETTING<br><span>THE GRID.</span></h2>
+            <p id="loading-detail" class="loading-detail">Loading your selected route and vehicle.</p>
+            <div class="loading-meter"><i></i></div>
+            <div class="loading-steps"><span>ROUTE</span><span>WORLD</span><span>VEHICLE</span><span>START</span></div>
           </div>
-
-          <label class="field-label">Select Mode</label>
-          <div id="mode-group" class="mode-grid">
-            <label class="mode-option">
-              <input type="radio" name="mode" value="free-drive" checked>
-              <span class="mode-card">
-                <span>
-                  <strong>Free Drive</strong>
-                  <small>Explore &amp; Cruise</small>
-                </span>
-                <span class="mode-dot" aria-hidden="true"></span>
-              </span>
-            </label>
-
-            <label class="mode-option">
-              <input type="radio" name="mode" value="race">
-              <span class="mode-card">
-                <span>
-                  <strong>Sprint Race</strong>
-                  <small>Race through checkpoints</small>
-                </span>
-                <span class="mode-dot" aria-hidden="true"></span>
-              </span>
-            </label>
+          <div class="loading-route-art">
+            <svg viewBox="0 0 420 250" aria-hidden="true">
+              <path d="M44 194 C60 160 55 88 102 82 C145 78 154 146 192 155 C235 165 237 70 282 67 C323 63 328 118 375 104"/>
+              <path class="route-line" d="M44 194 C60 160 55 88 102 82 C145 78 154 146 192 155 C235 165 237 70 282 67 C323 63 328 118 375 104"/>
+              <circle cx="44" cy="194" r="7" fill="#ffb347"/><circle cx="375" cy="104" r="7" fill="#6fe6a1"/>
+              <circle cx="102" cy="82" r="4" fill="white"/><circle cx="192" cy="155" r="4" fill="white"/><circle cx="282" cy="67" r="4" fill="white"/>
+            </svg>
           </div>
-
-          <label class="field-label" for="route-choice">Select Route</label>
-          <select id="route-choice" class="route-select" name="route">
-            <option value="state-house-eastbound">State House Avenue · Eastbound</option>
-            <option value="state-house-westbound">Nairobi Gallery · Westbound</option>
-            <option value="nairobi-ngara-sprint">Ngara to Kinyanjui Street · Sprint</option>
-          </select>
-
-          <label class="field-label">Select Car</label>
-          <div class="car-grid" id="car-list">
-            <label class="car-option">
-              <input type="radio" name="car" value="subaru" checked>
-              <span class="car-card">
-                <span class="car-meta">
-                  <strong>Subaru WRX</strong>
-                  <small>Turbo AWD</small>
-                </span>
-                <span class="car-icon" aria-hidden="true"></span>
-                <span class="car-dot" aria-hidden="true"></span>
-              </span>
-            </label>
-
-            <label class="car-option">
-              <input type="radio" name="car" value="dodge">
-              <span class="car-card">
-                <span class="car-meta">
-                  <strong>Dodge Challenger R/T</strong>
-                  <small>V8 Muscle</small>
-                </span>
-                <span class="car-icon" aria-hidden="true"></span>
-                <span class="car-dot" aria-hidden="true"></span>
-              </span>
-            </label>
-
-            <label class="car-option">
-              <input type="radio" name="car" value="nissan_x_trail">
-              <span class="car-card">
-                <span class="car-meta">
-                  <strong>Nissan X Trail</strong>
-                  <small>All-wheel drive</small>
-                </span>
-                <span class="car-icon" aria-hidden="true"></span>
-                <span class="car-dot" aria-hidden="true"></span>
-              </span>
-            </label>
-
-            <label class="car-option">
-              <input type="radio" name="car" value="nissan-skyline-r34-gt-r">
-              <span class="car-card">
-                <span class="car-meta">
-                  <strong>Nissan Skyline R34 GT-R</strong>
-                  <small>Performance coupe</small>
-                </span>
-                <span class="car-icon" aria-hidden="true"></span>
-                <span class="car-dot" aria-hidden="true"></span>
-              </span>
-            </label>
-          </div>
-
-          <div id="brand-strip" class="brand-strip" aria-label="Novatrix Media logo" hidden>
-            <img id="brand-logo" class="brand-logo" alt="Novatrix Media" data-src="Files/splash/novatrix-2.png">
-          </div>
-
-          <div class="cta-row">
-            <button id="backBtn" class="secondary-btn" type="button">Back</button>
-            <button id="driveBtn" class="primary-btn" type="button">Drive</button>
-          </div>
-
-          <div class="device-note">Mobile: tilt steering enabled · camera toggles stay in cockpit</div>
         </div>
       </section>
     </div>
@@ -796,6 +1124,8 @@
   </main>
 
   <script type="module">
+    import { createCareerStore } from './src/core/career.js';
+    import { CONFIG as GAME_CONFIG } from './src/config.js';
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -817,22 +1147,41 @@
 
     const introScreen = document.getElementById('intro-screen');
     const setupScreen = document.getElementById('setup-screen');
-    const startBtn = document.getElementById('startBtn');
-    const backBtn = document.getElementById('backBtn');
-    const driveBtn = document.getElementById('driveBtn');
-    const brandToggle = document.getElementById('brandToggle');
-    const brandStrip = document.getElementById('brand-strip');
-    const brandLogo = document.getElementById('brand-logo');
-    const brandSplash = document.getElementById('brand-splash');
-    const routeChoice = document.getElementById('route-choice');
-    const modeInputs = [...document.querySelectorAll('input[name="mode"]')];
-    const carInputs = [...document.querySelectorAll('input[name="car"]')];
+    const loadingScreen = document.getElementById('loading-screen');
     const host = document.querySelector('#scene');
     const title = document.querySelector('#hood-title');
     const baseMarker = document.querySelector('#bl');
     const loading = document.querySelector('#loading');
-
+    const careerStore = createCareerStore();
+    const careerRoutes = [
+      { id: 'state-house-eastbound', name: 'State House Avenue', detail: 'Eastbound · Nairobi Gallery', distance: '1.0 KM' },
+      { id: 'nairobi-ngara-sprint', name: 'Ngara Sprint', detail: 'Ngara · Kinyanjui Street', distance: '2.6 KM' },
+      { id: 'state-house-westbound', name: 'State House Avenue', detail: 'Westbound · State House', distance: '1.1 KM' }
+    ];
+    const routesByMode = {
+      circuit: [],
+      sprint: [careerRoutes[1]],
+      'free-drive': [careerRoutes[0], careerRoutes[2]]
+    };
+    let circuitRoutesPromise = null;
+    const cars = Object.entries(GAME_CONFIG.cars).map(([id, car]) => ({
+      id,
+      name: car.name || id,
+      type: car.type || 'CUSTOM PROFILE',
+      unlockAt: car.careerUnlockAt ?? 0,
+      initials: car.initials || car.name?.slice(0, 3).toUpperCase() || 'CAR',
+      bodyColor: car.bodyColor || null,
+      displayStats: car.displayStats || []
+    }));
+    document.getElementById('home-garage-count').textContent = String(cars.length).padStart(2, '0');
+    document.getElementById('career-garage-count').textContent = String(cars.length).padStart(2, '0');
     let currentScreen = 'intro';
+    let currentPage = 'profiles';
+    let selectedMode = null;
+    let selectedProfileId = null;
+    let selectedRoute = null;
+    let selectedCar = null;
+    let returnPage = 'routes';
     const mobileQuery = window.matchMedia('(max-width: 720px), (pointer: coarse)');
     const isMobile = () => mobileQuery.matches;
     const updateMobileLayout = () => document.body.classList.toggle('mobile-layout', isMobile());
@@ -841,92 +1190,428 @@
       currentScreen = name;
       introScreen.classList.toggle('active', name === 'intro');
       setupScreen.classList.toggle('active', name === 'setup');
+      loadingScreen.classList.toggle('active', name === 'loading');
+      loadingScreen.hidden = name !== 'loading';
     }
 
-    function getSelectedMode() {
-      const selected = modeInputs.find((input) => input.checked);
-      return selected ? selected.value : 'free-drive';
+    function setFlowPage(page) {
+      currentPage = page;
+      const activeView = { profiles: 'profile', routes: 'route' }[page] || page;
+      for (const id of ['profile', 'career-hub', 'route', 'garage']) {
+        document.getElementById(`${id}-view`).hidden = id !== activeView;
+      }
+      const headings = {
+        profiles: ['CAREER MODE', 'DRIVER PROFILE'],
+        'career-hub': ['CAREER MODE', 'EVENT MAP'],
+        routes: [selectedMode === 'sprint' ? 'SPRINT MODE' : 'CIRCUIT MODE', 'ROUTE SELECTION'],
+        garage: ['SHARED GARAGE', 'VEHICLE SELECTION']
+      };
+      const labels = headings[page] || headings.profiles;
+      document.getElementById('flow-heading').textContent = labels[0];
+      document.getElementById('flow-subheading').textContent = labels[1];
     }
 
-    function getSelectedCar() {
-      const selected = carInputs.find((input) => input.checked);
-      return selected ? selected.value : 'subaru';
+    function profiles() {
+      return careerStore.snapshot().profiles;
     }
 
-    function setMode(mode) {
-      const option = modeInputs.find((input) => input.value === mode);
-      if (option) option.checked = true;
+    function profileProgress(profileId = selectedProfileId) {
+      return profiles().find((profile) => profile.id === profileId) || null;
     }
 
-    modeInputs.forEach((input) => {
-      input.addEventListener('change', () => {
-        if (input.value === 'race') routeChoice.value = 'nairobi-ngara-sprint';
-        else if (routeChoice.value === 'nairobi-ngara-sprint') routeChoice.value = 'state-house-eastbound';
-      });
-    });
+    function renderProfiles() {
+      const list = document.getElementById('profile-list');
+      list.replaceChildren();
+      const savedProfiles = profiles();
+      if (!savedProfiles.length) {
+        const empty = document.createElement('p');
+        empty.className = 'flow-description';
+        empty.textContent = 'No drivers saved yet. Create your first profile to start a career.';
+        list.append(empty);
+      }
+      for (const profile of savedProfiles) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'profile-card';
+        const initials = document.createElement('span');
+        initials.className = 'profile-initial';
+        initials.textContent = profile.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+        const details = document.createElement('span');
+        const name = document.createElement('strong');
+        name.textContent = profile.name;
+        const progress = document.createElement('small');
+        progress.textContent = `${profile.eventsCompleted} EVENTS CLEARED`;
+        details.append(name, progress);
+        const open = document.createElement('span');
+        open.className = 'event-status';
+        open.textContent = 'OPEN  >';
+        button.append(initials, details, open);
+        button.addEventListener('click', () => selectProfile(profile.id));
+        list.append(button);
+      }
+    }
 
-    routeChoice.addEventListener('change', () => {
-      setMode(routeChoice.value === 'nairobi-ngara-sprint' ? 'race' : 'free-drive');
-    });
+    function selectProfile(profileId) {
+      selectedProfileId = profileId;
+      try { localStorage.setItem('hood.activeProfile', profileId); } catch { /* Optional convenience only. */ }
+      continueCareer(profileId);
+    }
 
-    brandToggle.addEventListener('click', () => {
-      if (isMobile()) {
-        launchGame();
+    async function continueCareer(profileId, showMapWhenComplete = true) {
+      try {
+        await loadCircuitRoutes();
+      } catch (error) {
+        console.error('[HOOD] Career routes could not be loaded:', error);
+        document.getElementById('aside-copy').textContent =
+          'Career events could not be loaded. Return to the menu and try again.';
         return;
       }
-      const showLogo = brandStrip.hidden;
-      if (showLogo && !brandLogo.hasAttribute('src')) {
-        brandLogo.src = brandLogo.dataset.src;
+      selectedProfileId = profileId;
+      selectedMode = 'career';
+      const profile = profileProgress(profileId);
+      if (!profile) {
+        openMode('career');
+        return;
       }
-      brandStrip.hidden = !showLogo;
-      brandToggle.setAttribute('aria-expanded', String(showLogo));
-      brandToggle.setAttribute('aria-label', showLogo ? 'Hide Novatrix Media logo' : 'Show Novatrix Media logo');
-    });
-
-    function launchGame() {
-      driveBtn.disabled = true;
-      brandToggle.disabled = true;
-      brandSplash.hidden = false;
-      brandSplash.setAttribute('aria-hidden', 'false');
-
-      const destination = new URL('./index.html', window.location.href);
-      destination.search = new URLSearchParams({
-        route: routeChoice.value,
-        car: getSelectedCar(),
-        mode: getSelectedMode(),
-        autostart: '1',
-        hoodFlow: '1'
-      }).toString();
-      window.setTimeout(() => window.location.assign(destination.href), 4400);
+      const nextEvent = careerRoutes.find((route) =>
+        careerStore.isEventUnlocked(profile.id, route.id) &&
+        !profile.completedRouteIds.includes(route.id)
+      );
+      if (nextEvent) {
+        selectedRoute = nextEvent;
+        openGarage('career-hub');
+        return;
+      }
+      renderCareerHub();
+      if (showMapWhenComplete) setFlowPage('career-hub');
     }
 
-    let pickerBuffer = '';
-    window.addEventListener('keydown', (event) => {
-      if (event.key.length !== 1) return;
-      pickerBuffer = (pickerBuffer + event.key.toLowerCase()).slice(-6);
-      if (pickerBuffer === 'picker') launchGame();
-    });
+    function renderCareerHub() {
+      const profile = profileProgress();
+      if (!profile) {
+        renderProfiles();
+        setFlowPage('profiles');
+        return;
+      }
+      document.getElementById('career-heading').textContent = `${profile.name}'s career`;
+      document.getElementById('career-profile-name').textContent = profile.name;
+      document.getElementById('career-event-count').textContent = String(profile.eventsCompleted);
+      document.getElementById('career-storage-warning').hidden = true;
+      document.getElementById('career-rank').textContent = profile.eventsCompleted >= 3
+        ? 'HOOD LEGEND'
+        : profile.eventsCompleted >= 1 ? 'RISING DRIVER' : 'ROOKIE DRIVER';
+      const list = document.getElementById('career-events');
+      list.replaceChildren();
+      careerRoutes.forEach((route, index) => {
+        const unlocked = careerStore.isEventUnlocked(profile.id, route.id);
+        const complete = profile.completedRouteIds.includes(route.id);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'career-event';
+        button.disabled = !unlocked;
+        const details = document.createElement('span');
+        const title = document.createElement('strong');
+        title.textContent = `${String(index + 1).padStart(2, '0')} · ${route.name}`;
+        const subtitle = document.createElement('small');
+        subtitle.textContent = route.detail;
+        details.append(title, subtitle);
+        const status = document.createElement('span');
+        status.className = 'event-status';
+        status.textContent = complete ? 'CLEARED' : unlocked ? 'UNLOCKED  >' : `CLEAR ${index} EVENT${index === 1 ? '' : 'S'}`;
+        button.append(details, status);
+        if (unlocked) button.addEventListener('click', () => {
+          selectedMode = 'career';
+          selectedRoute = route;
+          openGarage('career-hub');
+        });
+        list.append(button);
+      });
+    }
 
-    startBtn.addEventListener('click', () => {
+    function loadCircuitRoutes() {
+      if (!circuitRoutesPromise) {
+        circuitRoutesPromise = fetch('./data/routes/all-routes.json')
+          .then((response) => {
+            if (!response.ok) throw new Error(`Route catalogue HTTP ${response.status}`);
+            return response.json();
+          })
+          .then((catalogue) => {
+            if (!Array.isArray(catalogue?.routes)) {
+              throw new Error('Route catalogue must contain a routes array.');
+            }
+            const routes = catalogue.routes
+              .filter((route) => route?.circuit === true && route.mode === 'circuit')
+              .sort((a, b) => (a.lengthM ?? Infinity) - (b.lengthM ?? Infinity))
+              .map((route) => ({
+                id: route.id,
+                name: route.name,
+                detail: route.blurb || 'Closed Ngara circuit',
+                circuit: true,
+                lengthM: route.lengthM,
+                distance: Number.isFinite(route.lengthM)
+                  ? route.lengthM >= 1000
+                    ? `${(route.lengthM / 1000).toFixed(1)} KM`
+                    : `${Math.round(route.lengthM)} M`
+                  : 'CIRCUIT'
+              }));
+            if (!routes.length) throw new Error('Route catalogue contains no circuit routes.');
+            careerRoutes.push(...routes);
+            return routes;
+          })
+          .catch((error) => {
+            circuitRoutesPromise = null;
+            throw error;
+          });
+      }
+      return circuitRoutesPromise;
+    }
+
+    async function openMode(mode) {
+      selectedMode = mode;
       setScreen('setup');
-    });
+      document.getElementById('aside-caption').textContent =
+        mode === 'sprint' ? 'SPRINT READY' :
+        mode === 'free-drive' ? 'FREE DRIVE' :
+        mode === 'circuit' ? 'CIRCUIT RACING' : 'CAREER MODE';
+      document.getElementById('aside-title').textContent =
+        mode === 'sprint' ? 'Beat the checkpoints.' :
+        mode === 'free-drive' ? 'Take the long way.' :
+        mode === 'circuit' ? 'Own every lap.' : 'Earn every mile.';
+      document.getElementById('aside-copy').textContent = mode === 'sprint'
+        ? 'A timed Ngara run with four checkpoints. Clear the route to record your result.'
+        : mode === 'free-drive'
+          ? 'Explore the available Nairobi roads without checkpoint pressure or a timer.'
+          : mode === 'circuit'
+            ? 'Race the closed Ngara circuits for three or five timed laps.'
+            : 'Your driver profile keeps event clears and unlocks saved on this device.';
+      if (mode === 'career') {
+        try {
+          await loadCircuitRoutes();
+        } catch (error) {
+          console.error('[HOOD] Career routes could not be loaded:', error);
+          document.getElementById('aside-copy').textContent =
+            'Career events could not be loaded. Return to the menu and try again.';
+          return;
+        }
+        renderProfiles();
+        setFlowPage('profiles');
+      } else {
+        setFlowPage('routes');
+        if (mode === 'circuit') {
+          const routeList = document.getElementById('route-list');
+          routeList.replaceChildren();
+          const status = document.createElement('p');
+          status.className = 'flow-description';
+          status.textContent = 'Loading circuit routes…';
+          routeList.append(status);
+          try {
+            routesByMode.circuit = await loadCircuitRoutes();
+            if (selectedMode === mode) renderRoutes();
+          } catch (error) {
+            console.error('[HOOD] Circuit routes could not be loaded:', error);
+            if (selectedMode === mode) {
+              routeList.replaceChildren();
+              document.getElementById('route-description').textContent =
+                'Circuit routes could not be loaded. Return to the menu and try again.';
+            }
+          }
+        } else {
+          renderRoutes();
+        }
+      }
+    }
 
-    backBtn.addEventListener('click', () => {
-      setScreen('intro');
-    });
+    function renderRoutes() {
+      const list = document.getElementById('route-list');
+      list.replaceChildren();
+      document.getElementById('circuit-lap-setting').hidden = selectedMode !== 'circuit';
+      const routes = routesByMode[selectedMode] || [];
+      document.getElementById('route-kicker').textContent = `${selectedMode.toUpperCase()} · ROUTE SELECTION`;
+      document.getElementById('route-heading').textContent =
+        selectedMode === 'circuit' ? 'Choose a circuit' :
+        selectedMode === 'sprint' ? 'Choose a sprint' :
+        selectedMode === 'free-drive' ? 'Choose a starting point' : 'Pick your route';
+      document.getElementById('route-description').textContent = selectedMode === 'circuit'
+        ? 'Race three or five laps.'
+        : selectedMode === 'sprint'
+          ? 'Sprint events with checkpoint timing. More sprint routes are coming.'
+        : selectedMode === 'free-drive'
+          ? 'Choose where to begin. The full Nairobi road network is open for you to explore.'
+          : 'Choose any live road route for your circuit session.';
+      for (const route of routes) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'route-card';
+        const details = document.createElement('span');
+        const name = document.createElement('strong');
+        name.textContent = route.name;
+        const subtitle = document.createElement('small');
+        subtitle.textContent = route.detail;
+        details.append(name, subtitle);
+        const distance = document.createElement('span');
+        distance.className = 'route-distance';
+        distance.textContent = route.distance;
+        button.append(details, distance);
+        button.addEventListener('click', () => {
+          selectedRoute = route;
+          openGarage('routes');
+        });
+        list.append(button);
+      }
+    }
 
-    driveBtn.addEventListener('click', launchGame);
+    function openGarage(fromPage) {
+      returnPage = fromPage;
+      renderGarage();
+      setFlowPage('garage');
+      document.getElementById('garage-description').textContent =
+        `${selectedRoute.name} · ${selectedRoute.detail}. Choose a vehicle for this session.`;
+      document.getElementById('aside-caption').textContent = 'GARAGE';
+      document.getElementById('aside-title').textContent = selectedRoute.name;
+      document.getElementById('aside-copy').textContent = `${selectedRoute.detail} · ${selectedRoute.distance}. Your selected vehicle will load into this route.`;
+    }
+
+    function renderGarage() {
+      const list = document.getElementById('garage-list');
+      const progress = selectedMode === 'career' ? profileProgress() : null;
+      const available = cars.filter((car) => !progress || careerStore.isCarUnlocked(progress.id, car.id));
+      if (!available.some((car) => car.id === selectedCar)) selectedCar = available[0]?.id || null;
+      list.replaceChildren();
+      for (const car of cars) {
+        const unlocked = !progress || careerStore.isCarUnlocked(progress.id, car.id);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `garage-card${car.id === selectedCar ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
+        button.disabled = !unlocked;
+        const chip = document.createElement('span');
+        chip.className = 'car-chip';
+        chip.textContent = unlocked ? car.initials : 'LOCKED';
+        if (car.bodyColor) {
+          chip.style.backgroundColor = car.bodyColor;
+          chip.style.color = '#fff';
+        }
+        const details = document.createElement('span');
+        const name = document.createElement('strong');
+        name.textContent = car.name;
+        const status = document.createElement('small');
+        status.textContent = unlocked
+          ? [car.type, ...car.displayStats].filter(Boolean).join(' · ')
+          : `CLEAR ${car.unlockAt} EVENT${car.unlockAt === 1 ? '' : 'S'} TO UNLOCK`;
+        if (car.bodyColor) button.style.setProperty('--car-color', car.bodyColor);
+        details.append(name, status);
+        button.append(chip, details);
+        if (unlocked) button.addEventListener('click', () => {
+          selectedCar = car.id;
+          renderGarage();
+          document.getElementById('launch-game').disabled = false;
+        });
+        list.append(button);
+      }
+      document.getElementById('launch-game').disabled = !selectedCar;
+      document.getElementById('launch-game').textContent =
+        selectedMode === 'career' ? 'START CAREER' : 'LOAD';
+    }
+
+    function launchGame() {
+      if (!selectedRoute || !selectedCar) return;
+      const sprint = selectedMode === 'sprint' ||
+        (selectedMode === 'career' && selectedRoute.id === 'nairobi-ngara-sprint');
+      const circuit = selectedMode === 'circuit' || selectedRoute.circuit === true;
+      const params = new URLSearchParams({
+        route: selectedRoute.id,
+        car: selectedCar,
+        mode: sprint ? 'race' : circuit ? 'circuit' : 'free-drive',
+        autostart: '1',
+        hoodFlow: '1'
+      });
+      if (circuit) params.set('laps', document.getElementById('circuit-laps').value);
+      if (selectedMode === 'career' && selectedProfileId) {
+        params.set('career', '1');
+        params.set('profile', selectedProfileId);
+      }
+      document.getElementById('loading-detail').textContent =
+        `${selectedRoute.name} · ${cars.find((car) => car.id === selectedCar)?.name || 'Vehicle'} · Preparing world data.`;
+      setScreen('loading');
+      window.location.assign(new URL(`./index.html?${params}`, window.location.href));
+    }
+
+    document.querySelectorAll('[data-mode-choice]').forEach((button) => {
+      button.addEventListener('click', () => openMode(button.dataset.modeChoice));
+    });
+    document.getElementById('flowBackBtn').addEventListener('click', () => {
+      if (currentPage === 'garage') {
+        if (returnPage === 'career-hub') renderCareerHub();
+        setFlowPage(returnPage);
+      } else if (currentPage === 'career-hub') {
+        renderProfiles();
+        setFlowPage('profiles');
+      } else {
+        setScreen('intro');
+      }
+    });
+    document.getElementById('garage-back').addEventListener('click', () => {
+      if (returnPage === 'career-hub') renderCareerHub();
+      setFlowPage(returnPage);
+    });
+    document.getElementById('show-create-profile').addEventListener('click', () => {
+      const form = document.getElementById('create-profile-form');
+      form.hidden = false;
+      document.getElementById('show-create-profile').hidden = true;
+      document.getElementById('profile-message').textContent = '';
+      document.getElementById('profile-name').focus();
+    });
+    document.getElementById('cancel-profile').addEventListener('click', () => {
+      document.getElementById('create-profile-form').hidden = true;
+      document.getElementById('show-create-profile').hidden = false;
+    });
+    document.getElementById('create-profile-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const field = document.getElementById('profile-name');
+      const result = careerStore.addProfile(field.value);
+      if (!result.profile) {
+        document.getElementById('profile-message').textContent = 'Use a name between 2 and 24 characters.';
+        field.focus();
+        return;
+      }
+      selectedProfileId = result.profile.id;
+      document.getElementById('career-storage-warning').hidden = result.persisted;
+      try { localStorage.setItem('hood.activeProfile', selectedProfileId); } catch { /* Optional convenience only. */ }
+      field.value = '';
+      document.getElementById('create-profile-form').hidden = true;
+      document.getElementById('show-create-profile').hidden = false;
+      continueCareer(selectedProfileId);
+    });
+    document.getElementById('launch-game').addEventListener('click', launchGame);
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && currentScreen === 'setup') {
+        event.preventDefault();
+        document.getElementById('flowBackBtn').click();
+      }
+    });
 
     updateMobileLayout();
     mobileQuery.addEventListener('change', updateMobileLayout);
     window.addEventListener('resize', updateMobileLayout);
     window.addEventListener('orientationchange', updateMobileLayout);
 
-    if (isMobile()) {
-      startBtn.textContent = 'Start';
-      driveBtn.textContent = 'Start Driving';
+    const startupParams = new URLSearchParams(location.search);
+    const requestedMode = startupParams.get('mode');
+    const requestedProfile = startupParams.get('profile');
+    if (requestedMode === 'career' && requestedProfile && profileProgress(requestedProfile)) {
+      selectedProfileId = requestedProfile;
+      try { localStorage.setItem('hood.activeProfile', requestedProfile); } catch { /* Optional convenience only. */ }
+      if (startupParams.has('careerMenu')) {
+        selectedMode = 'career';
+        renderCareerHub();
+        setFlowPage('career-hub');
+        setScreen('setup');
+      } else {
+        continueCareer(requestedProfile);
+        setScreen('setup');
+      }
+    } else if (['career', 'circuit', 'sprint', 'free-drive'].includes(requestedMode)) {
+      openMode(requestedMode);
     }
-
 
     let carRoot = null, mixer = null, wheelNodes = [], carLength = 4.6, carHeight = 1.45, carLoaded = false;
     let visW = 8, startX = 8, endX = -8, titleLeft = 0, titleWidth = 1;
@@ -1187,9 +1872,7 @@
           console.error(e);
         }
       },
-      (ev) => {
-        if (ev.total > 0) loading.textContent = `PREPARING THE MACHINE... ${Math.round(ev.loaded / ev.total * 100)}%`;
-      },
+      () => {},
       (err) => {
         console.error(err);
         loading.textContent = 'UNABLE TO LOAD CAR: CHECK MODEL PATH';
@@ -1197,5 +1880,7 @@
       }
     );
   </script>
+  <div id="hood-radio"></div>
+  <script src="./music/radio.js" type="module"></script>
 </body>
 </html>

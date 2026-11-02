@@ -1,19 +1,29 @@
 {
   "tracks": [
     {
-      "title": "Staki",
-      "artist": "Femi One & Domani Munga",
-      "file": "Femi_One_Domani_Staki.mp3"
+      "title": "One Hour Reggae mix",
+      "artist": "Dj SpyFix KE",
+      "file": "jamdown.mp3"
     },
     {
-      "title": "Habari",
-      "artist": "Kitu Sewer & Edu",
-      "file": "HAbari.mp3"
+      "title": "50 Minutes of Migos",
+      "artist": "The Culture US",
+      "file": "BANDO_FLOW.mp3"
     },
      {
       "title": "Exponential Potential",
       "artist": "Juliani",
       "file": "expon.mp3"
+    },
+    {
+      "title": "Rhumba Mix",
+      "artist": "DJ Stan",
+      "file": "rhumba_mix.mp3"
+    },
+    {
+      "title": "Prime Octopizzo",
+      "artist": "DJ Burberry",
+      "file": "Octopizzo_Mixtape.mp3"
     },
      {
       "title": "Muhuni",

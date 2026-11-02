@@ -1,13 +1,12 @@
 const STORAGE_KEY = 'hood.stats.v1';
-const CAR_IDS = new Set(['dodge', 'subaru', 'nissan_x_trail']);
+const DEFAULT_CAR_IDS = ['dodge', 'subaru', 'nissan_x_trail'];
 
-const emptyStats = () => ({
+const emptyStats = (carIds) => ({
   version: 1,
-  cars: {
-    dodge: { distanceM: 0, activeSeconds: 0, sessions: 0 },
-    subaru: { distanceM: 0, activeSeconds: 0, sessions: 0 },
-    nissan_x_trail: { distanceM: 0, activeSeconds: 0, sessions: 0 }
-  },
+  cars: Object.fromEntries(carIds.map((id) => [
+    id,
+    { distanceM: 0, activeSeconds: 0, sessions: 0 }
+  ])),
   sprints: {}
 });
 
@@ -18,11 +17,11 @@ function safeStorage(storage) {
   try { return globalThis.localStorage; } catch { return null; }
 }
 
-function normaliseStats(value) {
-  const stats = emptyStats();
+function normaliseStats(value, carIds) {
+  const stats = emptyStats(carIds);
   if (!value || value.version !== 1 || typeof value !== 'object') return stats;
 
-  for (const carId of CAR_IDS) {
+  for (const carId of carIds) {
     const source = value.cars?.[carId];
     if (!source || typeof source !== 'object') continue;
     for (const key of ['distanceM', 'activeSeconds', 'sessions']) {
@@ -34,7 +33,7 @@ function normaliseStats(value) {
     for (const [routeId, cars] of Object.entries(value.sprints)) {
       if (!routeId || !cars || typeof cars !== 'object' || Array.isArray(cars)) continue;
       stats.sprints[routeId] = {};
-      for (const carId of CAR_IDS) {
+      for (const carId of carIds) {
         const sprint = cars[carId];
         if (!sprint || typeof sprint !== 'object' ||
             !Number.isFinite(sprint.bestSeconds) || sprint.bestSeconds <= 0 ||
@@ -50,13 +49,15 @@ function normaliseStats(value) {
   return stats;
 }
 
-export function createStatsStore(storage) {
+export function createStatsStore(storage, configuredCarIds = DEFAULT_CAR_IDS) {
   const target = safeStorage(storage);
-  let stats = emptyStats();
+  const carIds = [...new Set(configuredCarIds.filter((id) => typeof id === 'string' && id))];
+  const carIdSet = new Set(carIds);
+  let stats = emptyStats(carIds);
 
   try {
     const raw = target?.getItem(STORAGE_KEY);
-    if (raw) stats = normaliseStats(JSON.parse(raw));
+    if (raw) stats = normaliseStats(JSON.parse(raw), carIds);
   } catch { /* Storage can be blocked or contain invalid data. */ }
 
   const persist = () => {
@@ -68,19 +69,19 @@ export function createStatsStore(storage) {
     snapshot() { return JSON.parse(JSON.stringify(stats)); },
     flush: persist,
     startSession(carId) {
-      if (!CAR_IDS.has(carId)) return false;
+      if (!carIdSet.has(carId)) return false;
       stats.cars[carId].sessions++;
       persist();
       return true;
     },
     addDrive(carId, distanceM, activeSeconds) {
-      if (!CAR_IDS.has(carId) || !finiteNonNegative(distanceM) || !finiteNonNegative(activeSeconds)) return false;
+      if (!carIdSet.has(carId) || !finiteNonNegative(distanceM) || !finiteNonNegative(activeSeconds)) return false;
       stats.cars[carId].distanceM += distanceM;
       stats.cars[carId].activeSeconds += activeSeconds;
       return true;
     },
     recordSprint({ routeId, carId, timeSeconds, checkpointsPassed, totalCheckpoints } = {}) {
-      if (typeof routeId !== 'string' || !routeId || !CAR_IDS.has(carId) ||
+      if (typeof routeId !== 'string' || !routeId || !carIdSet.has(carId) ||
           !Number.isFinite(timeSeconds) || timeSeconds <= 0 ||
           !Number.isInteger(totalCheckpoints) || totalCheckpoints <= 0 ||
           checkpointsPassed !== totalCheckpoints) return { saved: false, personalBest: false };

@@ -297,7 +297,7 @@ export function buildBuildingMesh(buildings) {
   return new THREE.Mesh(merged, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }));
 }
 
-/** v1.2.2: painted centre-line dashes along a route + a coloured post at its start and end. One merged mesh = 1 draw call. */
+/** Painted centre-line dashes along a route. One merged mesh = 1 draw call. */
 export function buildRouteMarkings(route) {
   const pos = [], col = [], idx = []; const P = route.path.pts, y = 0.055, hw = 0.075, DASH = 3.5, GAP = 5.5;
   const quad = (ax, az, bx, bz, w, yy, c) => {
@@ -313,14 +313,6 @@ export function buildRouteMarkings(route) {
     if (s < DASH) quad(a.x, a.z, b.x, b.z, hw, y, paint);
     s += route.path.step;
   }
-  const post = (p, hex) => {                                                  // 1 m square, 14 m tall pillar so the ends are visible from afar
-    const c = new THREE.Color(hex), b = pos.length / 3, r = 0.5;
-    const ring = [[p.x - r, p.z - r], [p.x + r, p.z - r], [p.x + r, p.z + r], [p.x - r, p.z + r]];
-    for (const [px, pz] of ring) { pos.push(px, 0.05, pz); col.push(c.r, c.g, c.b); }
-    for (const [px, pz] of ring) { pos.push(px, 14, pz); col.push(c.r, c.g, c.b); }
-    for (let k = 0; k < 4; k++) { const n = (k + 1) % 4; idx.push(b + k, b + n, b + 4 + k, b + n, b + 4 + n, b + 4 + k, b + k, b + 4 + k, b + n, b + n, b + 4 + k, b + 4 + n); }
-  };
-  post(P[P.length - 1], 0xf05448);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.setIndex(idx); g.computeVertexNormals();

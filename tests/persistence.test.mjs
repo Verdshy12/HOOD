@@ -40,3 +40,14 @@ const invalidShape = createStatsStore(memoryStorage(JSON.stringify({ version: 99
 ok('unsupported data version is ignored', invalidShape.cars.dodge.distanceM === 0);
 const unavailable = createStatsStore({ getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } });
 ok('unavailable storage remains usable in memory', unavailable.startSession('subaru') && unavailable.snapshot().cars.subaru.sessions === 1);
+
+const profileStats = createStatsStore(memoryStorage(), ['dodge', 'dodge-track']);
+const profileRun = profileStats.recordSprint({
+  routeId: 'ngara-circuit-1',
+  carId: 'dodge-track',
+  timeSeconds: 91,
+  checkpointsPassed: 1,
+  totalCheckpoints: 1
+});
+ok('race records accept separately configured car profiles',
+  profileRun.saved && profileStats.snapshot().sprints['ngara-circuit-1']['dodge-track'].bestSeconds === 91);

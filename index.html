@@ -27,10 +27,10 @@
   <link rel="apple-touch-icon" href="Files/splash/hood-icon-192.png">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HOOD">
-  <title>HOOD v1.2.4</title>
+  <title>HOOD v1.0.1</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="music/radio.css?v=1.2.4.4">
-  <link rel="stylesheet" href="style.css?v=1.2.4.4">
+  <link rel="stylesheet" href="music/radio.css?v=1.0.1">
+  <link rel="stylesheet" href="style.css?v=1.0.1">
 
   <script type="importmap">
   {
@@ -61,7 +61,27 @@
   </div>
 
   <div id="game" tabindex="0"></div>
-  <div id="loading">INITIALIZING</div>
+  <div id="loading" role="status" aria-live="polite">
+    <div class="boot-card">
+      <div class="boot-copy">
+        <p class="boot-label">HOOD · WORLD BUILD</p>
+        <h2>SETTING<br><span>THE GRID.</span></h2>
+        <p id="boot-detail">INITIALIZING YOUR SESSION</p>
+        <div class="boot-meter"><i id="boot-meter-fill"></i></div>
+        <div class="boot-steps"><span>ROUTE</span><span>WORLD</span><span>VEHICLE</span><span>START</span></div>
+      </div>
+      <div class="boot-map">
+        <p>HOOD ROUTE NETWORK</p>
+        <svg viewBox="0 0 420 250" aria-hidden="true">
+          <path d="M44 194 C60 160 55 88 102 82 C145 78 154 146 192 155 C235 165 237 70 282 67 C323 63 328 118 375 104"/>
+          <path class="boot-route-line" d="M44 194 C60 160 55 88 102 82 C145 78 154 146 192 155 C235 165 237 70 282 67 C323 63 328 118 375 104"/>
+          <circle cx="44" cy="194" r="7" fill="#ffb347"/><circle cx="375" cy="104" r="7" fill="#6fe6a1"/>
+          <circle cx="102" cy="82" r="4" fill="white"/><circle cx="192" cy="155" r="4" fill="white"/><circle cx="282" cy="67" r="4" fill="white"/>
+        </svg>
+        <div id="boot-selection">CAREER · ROUTE · VEHICLE</div>
+      </div>
+    </div>
+  </div>
 
   <header class="hud top">
     <h1>DODGE CHALLENGER R/T</h1>
@@ -82,8 +102,38 @@
         <span>NEXT</span>
         <strong id="hudNextCheckpoint">Ngara / Quarry</strong>
       </div>
+      <div class="sprint-guidance" aria-label="Direction and distance to next checkpoint">
+        <span id="checkpointArrow" aria-hidden="true">↑</span>
+        <strong id="hudCheckpointDistance">— M</strong>
+      </div>
+    </div>
+    <div id="circuitHud" class="sprint-hud circuit-hud" hidden>
+      <div class="sprint-hud-top">
+        <span>LAP</span>
+        <strong id="circuitLap">START</strong>
+      </div>
+      <div class="sprint-hud-next">
+        <span>TIME</span>
+        <strong id="circuitLapTime">00:00.000</strong>
+      </div>
+      <div class="sprint-hud-next">
+        <span>BEST</span>
+        <strong id="circuitBestLap">--:--.---</strong>
+      </div>
     </div>
     <button id="menuBtn" type="button" aria-label="Open game menu" title="Menu (Esc)">MENU</button>
+    <div id="navigationMap" class="navigation-map" role="img" aria-label="Route map showing your position and direction" hidden>
+      <canvas id="navigationMapCanvas" width="240" height="240"></canvas>
+      <span id="navigationMapLabel">ROUTE MAP</span>
+    </div>
+  </div>
+
+  <div id="mobileSteeringSelector" class="mobile-steering-selector" role="group" aria-label="Mobile steering mode" hidden>
+    <div class="steering-selector-label"><span>STEERING</span><strong id="steeringModeStatus" aria-live="polite">PAD CONTROL</strong></div>
+    <div class="steering-mode-buttons">
+      <button id="padSteeringBtn" type="button" aria-pressed="true">PADS</button>
+      <button id="tiltSteeringBtn" type="button" aria-pressed="false">TILT</button>
+    </div>
   </div>
 
   <section id="pauseOverlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
@@ -93,8 +143,9 @@
         <h2 id="pauseTitle">Drive paused</h2>
         <div class="overlay-actions menu-options">
           <button id="resumeBtn" class="overlay-primary" type="button">Resume driving</button>
-          <button id="pauseRoutesBtn" class="overlay-secondary" type="button">Change route</button>
           <button id="openDashboardBtn" class="overlay-secondary" type="button">Open dashboard</button>
+          <button id="goToModeMenuBtn" class="overlay-secondary" type="button">Career menu</button>
+          <button id="goToMainMenuBtn" class="overlay-secondary" type="button">Choose game mode</button>
           <button id="openControlsBtn" class="overlay-secondary" type="button">Controls</button>
         </div>
       </div>
@@ -139,12 +190,18 @@
             <div class="route-row"><span>NEXT UP</span><strong id="sprintCheckpointName">—</strong></div>
             <div class="route-row"><span>ELAPSED</span><strong id="sprintTime">00:00.0</strong></div>
           </div>
+          <div class="dashboard-block" id="circuitDetails" hidden>
+            <h3>CIRCUIT</h3>
+            <div class="route-row"><span>LAP</span><strong id="dashboardCircuitLap">—</strong></div>
+            <div class="route-row"><span>CURRENT LAP</span><strong id="dashboardCircuitTime">00:00.000</strong></div>
+            <div class="route-row"><span>BEST LAP</span><strong id="dashboardCircuitBest">—</strong></div>
+          </div>
         </div>
         <div class="dashboard-block sprint-records-block">
           <h3>SPRINT RECORDS</h3>
           <div id="sprintRecords" class="sprint-records"><p>No completed sprints.</p></div>
         </div>
-        <div class="overlay-actions"><button class="overlay-secondary menuBackBtn" type="button">Back to menu</button></div>
+        <div class="overlay-actions"><button class="overlay-secondary menuBackBtn" type="button">Back</button></div>
       </section>
 
       <section id="controlsView" class="menu-view" aria-labelledby="controlsTitle" hidden>
@@ -152,25 +209,45 @@
         <h2 id="controlsTitle">Controls</h2>
         <div class="controls-grid">
           <div><h3>KEYBOARD</h3><p>W / ↑ accelerate</p><p>S / ↓ brake or reverse</p><p>A D / ← → steer</p><p>Space drift · Shift / N nitro</p><p>C / V cameras · L headlights</p><p>Esc / P menu · R radio</p></div>
-          <div><h3>TOUCH & CONTROLLER</h3><p>Touch pedals and steering buttons</p><p>Hold Drift or Turbo to activate</p><p>Gamepad: left stick steer</p><p>Triggers accelerate and brake</p><p>Controller buttons: drift and nitro</p><p>Phone tilt steering can be enabled</p></div>
+          <div><h3>TOUCH & CONTROLLER</h3><p>Choose PADS or TILT in the mobile steering switch</p><p>Touch pedals and hold Drift or Turbo</p><p>Gamepad: left stick steer</p><p>Triggers accelerate and brake</p><p>Controller buttons: drift and nitro</p></div>
         </div>
-        <div class="overlay-actions"><button class="overlay-secondary menuBackBtn" type="button">Back to menu</button></div>
+        <div class="overlay-actions"><button class="overlay-secondary menuBackBtn" type="button">Back</button></div>
       </section>
     </div>
   </section>
 
-  <section id="resultsOverlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
-    <div class="overlay-panel">
-      <p class="overlay-kicker" id="resultStatus">SPRINT COMPLETE</p>
-      <h2 id="resultTitle">Finish recorded.</h2>
-      <div class="result-times">
-        <div><span>YOUR TIME</span><strong id="resultTime">0.0 S</strong></div>
-        <div><span>PERSONAL BEST</span><strong id="resultBest">0.0 S</strong></div>
+  <section id="resultsOverlay" class="game-overlay results-overlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+    <div class="overlay-panel results-panel">
+      <div class="result-summary">
+        <p class="overlay-kicker" id="resultStatus">EVENT COMPLETE</p>
+        <h2 id="resultTitle">Milestone reached.</h2>
+        <p id="resultMessage" class="result-message">Your session has ended. Head to the mode menu to start another round or choose a different mode.</p>
+        <div id="resultTimes" class="result-times" hidden>
+          <div><span id="resultTimeLabel">YOUR TIME</span><strong id="resultTime">0.0 S</strong></div>
+          <div><span id="resultBestLabel">PERSONAL BEST</span><strong id="resultBest">0.0 S</strong></div>
+        </div>
+        <section id="resultLeaderboardPanel" class="result-leaderboard" hidden aria-labelledby="resultLeaderboardTitle">
+          <h3 id="resultLeaderboardTitle">EVENT LEADERBOARD</h3>
+          <div class="leaderboard-scroll">
+            <table>
+              <thead><tr><th>POS</th><th>DRIVER</th><th>VEHICLE</th><th>TIME</th></tr></thead>
+              <tbody id="resultLeaderboard"></tbody>
+            </table>
+          </div>
+          <div id="resultLapTimesPanel" class="result-lap-times" hidden>
+            <h4>LAP TIMES</h4>
+            <ol id="resultLapTimes"></ol>
+          </div>
+        </section>
       </div>
-      <div class="overlay-actions">
-        <button id="resultRetryBtn" class="overlay-primary" type="button">Retry sprint</button>
-        <button id="resultRoutesBtn" class="overlay-secondary" type="button">Choose route</button>
-      </div>
+      <nav class="result-navigation" aria-label="After event">
+        <p class="result-replay-window">TAKE YOUR TIME · YOUR RESULTS ARE SAVED</p>
+        <div class="overlay-actions">
+          <button id="resultReplayBtn" class="overlay-primary" type="button">Replay event</button>
+          <button id="resultModeMenuBtn" class="overlay-secondary" type="button">Career menu</button>
+          <button id="resultMainMenuBtn" class="overlay-secondary" type="button">Choose game mode</button>
+        </div>
+      </nav>
     </div>
   </section>
 
@@ -251,6 +328,33 @@
       let sessionStarted = false;
       let routeSelectionMade = false;
       let lastLoad = null;
+      const params = new URLSearchParams(window.location.search);
+      const routeNames = {
+        "state-house-eastbound": "State House Avenue · Eastbound",
+        "state-house-westbound": "State House Avenue · Westbound",
+        "nairobi-ngara-sprint": "Ngara Sprint · Kinyanjui Street"
+      };
+      const carNames = {
+        dodge: "Dodge Challenger R/T",
+        subaru: "Subaru Impreza WRX STI",
+        nissan_x_trail: "Nissan X Trail",
+        "nissan-skyline-r34-gt-r": "Nissan Skyline R34 GT-R"
+      };
+      const bootSelection = document.getElementById("boot-selection");
+      const bootRoute = routeNames[params.get("route")] || "HOOD ROUTE NETWORK";
+      const bootCar = carNames[params.get("car")] || "Shared Garage";
+      const bootMode = params.get("mode") === "race" ? "SPRINT" :
+        params.get("career") === "1" ? "CAREER" :
+        params.get("mode") === "free-drive" ? "FREE DRIVE" : "CIRCUIT";
+      if (bootSelection) bootSelection.textContent = `${bootMode} · ${bootRoute} · ${bootCar}`;
+
+      function updateBootProgress(detail = {}) {
+        const fill = document.getElementById("boot-meter-fill");
+        const label = document.getElementById("boot-detail");
+        const progress = Number.isFinite(detail.p) ? Math.max(0, Math.min(1, detail.p)) : 0;
+        if (fill) fill.style.width = `${Math.max(3, Math.round(progress * 100))}%`;
+        if (label && detail.label) label.textContent = detail.label.toUpperCase();
+      }
 
       function post(message) {
         if (!frame?.contentWindow) return;
@@ -279,11 +383,22 @@
 
       window.addEventListener("hood:load-progress", (e) => {
         lastLoad = { type: "HOOD_LOAD_PROGRESS", ...e.detail };
+        updateBootProgress(e.detail);
         post(lastLoad);
       });
-      window.addEventListener("hood:route-progress", (e) => post({ type: "HOOD_ROUTE_PROGRESS", ...e.detail }));
-      window.addEventListener("hood:route-ready", (e) => post({ type: "HOOD_ROUTE_READY", ...e.detail }));
-      window.addEventListener("hood:route-error", (e) => post({ type: "HOOD_ROUTE_ERROR", ...e.detail }));
+      window.addEventListener("hood:route-progress", (e) => {
+        updateBootProgress(e.detail);
+        post({ type: "HOOD_ROUTE_PROGRESS", ...e.detail });
+      });
+      window.addEventListener("hood:route-ready", (e) => {
+        updateBootProgress({ p: 1, label: "Route ready · starting session" });
+        post({ type: "HOOD_ROUTE_READY", ...e.detail });
+      });
+      window.addEventListener("hood:route-error", (e) => {
+        const label = document.getElementById("boot-detail");
+        if (label) label.textContent = `ROUTE LOAD FAILED · ${e.detail?.message || "CHECK CONSOLE"}`;
+        post({ type: "HOOD_ROUTE_ERROR", ...e.detail });
+      });
 
       window.addEventListener("message", (event) => {
         if (event.source !== frame.contentWindow) return;
@@ -327,7 +442,9 @@
         const route = window.__game?.route;
         const routeName = document.getElementById("routeName");
         if (route && routeName) {
-          routeName.textContent = route.short.toUpperCase() + " · " + route.name.toUpperCase();
+          routeName.textContent = params.get("mode") === "free-drive" && params.get("career") !== "1"
+            ? "FREE DRIVE · NAIROBI"
+            : route.short.toUpperCase() + " · " + route.name.toUpperCase();
         }
 
         overlay.classList.add("dismissed");
@@ -355,7 +472,7 @@
     })();
   </script>
 
-  <script src="src/main.js?v=1.2.4.4" type="module"></script>
+  <script src="src/main.js?v=1.0.1" type="module"></script>
   <script src="music/radio.js?v=1.2.4.4" type="module"></script>
 </body>
 </html>

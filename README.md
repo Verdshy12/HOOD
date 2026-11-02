@@ -53,10 +53,19 @@ The current development baseline includes:
 - Vehicle selection.
 - Route selection before entering gameplay.
 - Free Drive and Race game modes.
+- Career profiles with per-driver route and vehicle unlock progression.
+- Ngara circuit racing across eight closed routes, with three- or five-lap events, lap timing and a shared vehicle garage. Career unlocks circuit routes from shortest to longest.
+- Configurable car profiles that share vehicle models while providing different performance specifications and body colors.
+- A compact navigation map in Circuit and Free Drive sessions.
+- Post-event track previews with the completed event's leaderboard and lap results in race modes.
+- Sprint and Career mode selection followed by the shared vehicle garage.
+- Animated route/world loading handoff before a session begins.
 - State House Avenue driving route.
 - Ngara Sprint challenge.
+- Sprint HUD guidance with checkpoint direction and route distance, plus a clear finish notification.
 - Desktop keyboard controls.
 - Mobile touch controls and landscape gameplay support.
+- Mobile steering switch for touch pads or device tilt steering.
 - Co-Driver cockpit view.
 - In-game vehicle lighting controls.
 - HOOD Radio integration.
@@ -170,3 +179,26 @@ Every release should improve the current experience while contributing towards t
 
 **HOOD**  
 *An evolving cross-platform gaming platform.*
+
+## HOOD v1.0.1
+
+HOOD is a Nairobi-focused driving experience with four gameplay modes:
+
+- **Career:** Create a profile, progress through events and unlock vehicles.
+- **Circuit:** Race closed tracks in three- or five-lap events.
+- **Sprint:** Complete checkpoint-based driving challenges.
+- **Free Drive:** Explore routes without race objectives.
+
+### Vehicle catalogue
+
+- Dodge
+- Subaru WRX STI
+- Nissan Skyline R34 GT-R
+- GTR-35
+
+### Release
+
+Version: **1.0.1**
+
+The original GitHub release, **v1.0.0**, is the project baseline.
+See [CHANGELOG.md](CHANGELOG.md) for release details.

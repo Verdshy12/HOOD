@@ -17,6 +17,8 @@ ok('sprint route preserves existing route entries', data.routes.some((r) => r.id
 ok('sprint is about 2.6 km', route.path.length > 2500 && route.path.length < 2800, route.path.length.toFixed(0) + ' m');
 const checkpointProgress = route.checkpoints.map((checkpoint) => trackProgress(route.path, checkpoint.x, checkpoint.z).s);
 ok('sprint has four ordered checkpoints', checkpointProgress.length === 4 && checkpointProgress.every((s, i, all) => !i || s > all[i - 1]));
+const checkpointOffsets = route.checkpoints.map((checkpoint) => trackProgress(route.path, checkpoint.x, checkpoint.z).dist);
+ok('sprint checkpoints remain close to the route guidance line', checkpointOffsets.every((distance) => distance < 8), `${Math.max(...checkpointOffsets).toFixed(1)} m max`);
 ok('tile includes only known or explicitly overridden surfaces', tile.roads.every((road) => road.surface));
 ok('Kinyanjui has the explicit murram override', tile.roads.some((road) => road.id === 4821502 && road.surface === 'murram'));
 const centerline = route.path.pts;

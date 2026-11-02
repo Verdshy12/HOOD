@@ -1,6 +1,6 @@
 {
   "name": "HOOD",
-  "version": "1.2.4",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "vendor": "node tools/vendor-three.mjs",
     "build:car": "node tools/optimize-car.mjs source/dodge/scene.gltf models/dodge.glb",
     "build:tile": "node tools/build-tile.mjs source/nairobi-osm.json data/tiles/state-house.json --radius 600",
-    "test": "node tests/vehicle.test.mjs && node tests/world.test.mjs && node tests/core.test.mjs && node tests/meshes.test.mjs && node tests/carRig.test.mjs && node tests/carRig.test.mjs models/nissan_x_trail.glb 4.65 && node tests/carRig.test.mjs models/nissan_skyline_r34_gt-r.glb 4.65 skyline-r34 && node tests/modelManifest.test.mjs && node tests/drive.test.mjs && node tests/routes.test.mjs && node tests/sprint.test.mjs && node tests/persistence.test.mjs",
+    "test": "node tests/vehicle.test.mjs && node tests/world.test.mjs && node tests/core.test.mjs && node tests/meshes.test.mjs && node tests/carRig.test.mjs && node tests/carRig.test.mjs models/GTR+35.glb 4.65 && node tests/carRig.test.mjs models/nissan_skyline_r34_gt-r.glb 4.65 skyline-r34 && node tests/modelManifest.test.mjs && node tests/drive.test.mjs && node tests/routes.test.mjs && node tests/sprint.test.mjs && node tests/circuit.test.mjs && node tests/carProfiles.test.mjs && node tests/persistence.test.mjs && node tests/input.test.mjs && node tests/career.test.mjs",
     "build:routes": "node tools/build-routes.mjs data/tiles/state-house.json data/routes/real-road-v1.2.2.json"
   },
   "dependencies": {
