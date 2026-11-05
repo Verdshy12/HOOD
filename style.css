@@ -418,8 +418,7 @@ body.results-preview-active .drive-controls,
 body.results-preview-active .mobile-drive-controls,
 body.results-preview-active .boost-panel,
 body.results-preview-active #help,
-body.results-preview-active #hood-radio,
-body.results-preview-active #mobileSteeringSelector { display: none !important; }
+body.results-preview-active #hood-radio { display: none !important; }
 .route-name { color: #fff; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
 .route-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
 .route-row[hidden],
@@ -611,7 +610,7 @@ body .route { left: calc(12px + var(--sal)); }
   body:not(.mobile-layout) .mobile-drive-controls { display: none; }
 }
 
-/* ---- Touch layout: steering LEFT, pedals RIGHT, actions above pedals, boost top-right ---- */
+/* ---- Touch layout: steering LEFT, pedals RIGHT, Drift above pedals ---- */
 body.mobile-layout .mobile-drive-controls {
   display: flex;
   inset: auto calc(12px + var(--sar)) calc(10px + var(--sab)) calc(12px + var(--sal));
@@ -623,6 +622,12 @@ body.mobile-layout .mobile-pedals { gap: 10px; }
 body.mobile-layout .mobile-control { min-width: 72px; min-height: 72px; }
 body.mobile-layout .mobile-brake { min-height: 72px; }
 body.mobile-layout .mobile-throttle { min-height: 96px; }
+body.mobile-layout #driftBtn {
+  position: fixed;
+  right: calc(12px + var(--sar));
+  bottom: calc(108px + var(--sab));
+  z-index: 3;
+}
 
 body.mobile-layout .drive-controls {
   left: calc(12px + var(--sal));
@@ -659,6 +664,7 @@ body.mobile-layout #fullscreenBtn {
   body.mobile-layout .mobile-brake    { min-height: 60px; }
   body.mobile-layout .mobile-throttle { min-height: 84px; }
   body.mobile-layout .drive-controls  { bottom: calc(100px + var(--sab)); }
+  body.mobile-layout #driftBtn { bottom: calc(96px + var(--sab)); }
   body.mobile-layout .mobile-control span { font-size: 18px; }
 }
 
@@ -1243,22 +1249,6 @@ body .route {
   .boot-map svg { max-height: 170px; }
 }
 
-.mobile-steering-selector { display: none; }
-#mobileSteeringSelector[hidden] { display: none !important; }
-body.mobile-layout .mobile-steering-selector:not([hidden]) {
-  position: fixed;
-  z-index: 8;
-  top: calc(58px + var(--sat));
-  left: calc(12px + var(--sal));
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 6px 8px;
-  border: 1px solid rgba(32,200,255,.4);
-  border-radius: 9px;
-  background: rgba(5,12,17,.88);
-  backdrop-filter: blur(8px);
-}
 body.mobile-layout .navigation-map {
   position: absolute;
   top: calc(100% + 8px);
@@ -1266,30 +1256,8 @@ body.mobile-layout .navigation-map {
   bottom: auto;
   width: min(94px, max(54px, calc(22vh - 18px)));
 }
-.steering-selector-label span,
-.steering-selector-label strong {
-  display: block;
-  font: 700 8px/1.2 Arial,sans-serif;
-  letter-spacing: .12em;
+body:not(.driving) .drive-controls,
+body:not(.driving) .mobile-drive-controls,
+body:not(.driving) .boost-panel {
+  display: none !important;
 }
-.steering-selector-label span { color: #aebdca; }
-.steering-selector-label strong { margin-top: 3px; color: #20c8ff; }
-.steering-mode-buttons { display: flex; gap: 4px; }
-.steering-mode-buttons button {
-  min-width: 42px;
-  min-height: 30px;
-  padding: 0 7px;
-  border: 1px solid #20c8ff55;
-  border-radius: 6px;
-  color: #d7e4eb;
-  background: #07131d;
-  font: 800 8px/1 Arial,sans-serif;
-  letter-spacing: .08em;
-  touch-action: manipulation;
-}
-.steering-mode-buttons button[aria-pressed="true"] {
-  border-color: #20c8ff;
-  color: #041017;
-  background: #20c8ff;
-}
-body.tilt-steering .mobile-steering-fallback { display: none !important; }

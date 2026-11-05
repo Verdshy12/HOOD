@@ -186,7 +186,8 @@ function flushDriveStats() {
 
 function syncRunState() {
   const portraitPaused = game.started && portraitGate.matches;
-  game.paused = game.userPaused || portraitPaused || game.sprintFinished;
+  const visibilityPaused = game.started && document.hidden;
+  game.paused = game.userPaused || portraitPaused || visibilityPaused || game.sprintFinished;
   input?.setEnabled(!game.paused);
   if (game.paused) loop?.stop();
   else if (game.started) loop?.start();
@@ -489,7 +490,7 @@ const gfx = createRenderer($('game'), {
   },
 
   onRestored: () => {
-    if (game.started) loop?.start();
+    if (game.started) syncRunState();
   }
 });
 
@@ -503,11 +504,15 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(C.gfx.sky);
 scene.fog = new THREE.Fog(C.gfx.sky, C.gfx.fogNear, C.gfx.fogFar);
 
-scene.add(new THREE.HemisphereLight(0xd9edff, 0x424034, 2));
+scene.add(new THREE.HemisphereLight(0xe4f0ff, 0x4c3b2b, 2.1));
 
-const sun = new THREE.DirectionalLight(0xffe0b5, 2.5);
+const sun = new THREE.DirectionalLight(0xffe6c6, 2.8);
 sun.position.set(-30, 50, 20);
 scene.add(sun);
+
+const skyFill = new THREE.DirectionalLight(0x8dbdff, 0.55);
+skyFill.position.set(35, 18, -40);
+scene.add(skyFill);
 
 // HOOD terrain grass: repeating grass-medium surface.
 const groundTexture = new THREE.TextureLoader().load(
@@ -645,45 +650,13 @@ addEventListener('pagehide', flushDriveStats);
 $('routesBtn')?.addEventListener('click', () => { if (game.started) changeRoute(); });
 $('camBtn')?.addEventListener('click', () => { if (game.started) toggleCamera(); });
 
-let mobileSteeringMode = 'pads';
-const steeringModeSelector = $('mobileSteeringSelector');
-const syncSteeringModeUI = (status = '') => {
-  if (!steeringModeSelector) return;
-  steeringModeSelector.hidden = !mobileLayoutQuery.matches;
-  document.body.classList.toggle('tilt-steering', mobileSteeringMode === 'tilt');
-  $('padSteeringBtn')?.setAttribute('aria-pressed', String(mobileSteeringMode === 'pads'));
-  $('tiltSteeringBtn')?.setAttribute('aria-pressed', String(mobileSteeringMode === 'tilt'));
-  text('steeringModeStatus', status || (mobileSteeringMode === 'tilt' ? 'TILT ACTIVE' : 'PAD CONTROL'));
-};
-const selectPadSteering = () => {
-  input.disableTiltSteering();
-  mobileSteeringMode = 'pads';
-  syncSteeringModeUI('PAD CONTROL');
-};
-const selectTiltSteering = async () => {
-  if (!mobileLayoutQuery.matches) return;
-  if (await input.enableTiltSteering()) {
-    mobileSteeringMode = 'tilt';
-    syncSteeringModeUI('TILT ACTIVE');
-    return;
-  }
-  selectPadSteering();
-  syncSteeringModeUI('MOTION UNAVAILABLE · PADS ACTIVE');
-};
-$('padSteeringBtn')?.addEventListener('click', selectPadSteering);
-$('tiltSteeringBtn')?.addEventListener('click', selectTiltSteering);
-syncSteeringModeUI();
-mobileLayoutQuery.addEventListener('change', () => {
-  if (!mobileLayoutQuery.matches && mobileSteeringMode === 'tilt') selectPadSteering();
-  else syncSteeringModeUI();
-});
-
 const portraitGate = matchMedia('(max-width: 700px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait)');
 const syncPortraitPause = () => {
   if (!game.started || !loop) return;
   syncRunState();
 };
 portraitGate.addEventListener('change', syncPortraitPause);
+document.addEventListener('visibilitychange', syncRunState);
 
 $('game')?.addEventListener('pointerdown', (event) => {
   cockpitPointerX = event.clientX;
@@ -804,7 +777,7 @@ async function bootEngine() {
   let label = 'Loading';
   const report = () => emit('hood:load-progress', { p: 0.85 * part.car + 0.15 * part.routes, label });
 
-  preloadMusic(() => {}).catch(() => {});
+  if (!mobileLayoutQuery.matches) preloadMusic(() => {}).catch(() => {});
 
   const [gltf, routesData, modelManifest] = await Promise.all([
     loader.loadAsync(C.car.model, (e) => {
@@ -944,7 +917,7 @@ async function loadRoute(routeId, opts = {}) {
       profileId
     };
     const isOpenFreeDrive = mode === 'free-drive' && !profileId;
-    const navigationMapEnabled = mode === 'free-drive' || mode === 'circuit';
+    const navigationMapEnabled = !mobileLayoutQuery.matches;
     const navigationMap = $('navigationMap');
     if (navigationMap) {
       navigationMap.hidden = !navigationMapEnabled;

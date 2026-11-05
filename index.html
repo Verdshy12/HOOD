@@ -128,14 +128,6 @@
     </div>
   </div>
 
-  <div id="mobileSteeringSelector" class="mobile-steering-selector" role="group" aria-label="Mobile steering mode" hidden>
-    <div class="steering-selector-label"><span>STEERING</span><strong id="steeringModeStatus" aria-live="polite">PAD CONTROL</strong></div>
-    <div class="steering-mode-buttons">
-      <button id="padSteeringBtn" type="button" aria-pressed="true">PADS</button>
-      <button id="tiltSteeringBtn" type="button" aria-pressed="false">TILT</button>
-    </div>
-  </div>
-
   <section id="pauseOverlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
     <div class="overlay-panel">
       <div id="menuHome" class="menu-view">
@@ -209,7 +201,7 @@
         <h2 id="controlsTitle">Controls</h2>
         <div class="controls-grid">
           <div><h3>KEYBOARD</h3><p>W / ↑ accelerate</p><p>S / ↓ brake or reverse</p><p>A D / ← → steer</p><p>Space drift · Shift / N nitro</p><p>C / V cameras · L headlights</p><p>Esc / P menu · R radio</p></div>
-          <div><h3>TOUCH & CONTROLLER</h3><p>Choose PADS or TILT in the mobile steering switch</p><p>Touch pedals and hold Drift or Turbo</p><p>Gamepad: left stick steer</p><p>Triggers accelerate and brake</p><p>Controller buttons: drift and nitro</p></div>
+          <div><h3>TOUCH & CONTROLLER</h3><p>Use the steering pads and touch pedals</p><p>Hold Drift or Turbo while driving</p><p>Gamepad: left stick steer</p><p>Triggers accelerate and brake</p><p>Controller buttons: drift and nitro</p></div>
         </div>
         <div class="overlay-actions"><button class="overlay-secondary menuBackBtn" type="button">Back</button></div>
       </section>
@@ -270,7 +262,6 @@
     SPACE — DRIFT<br>
     SHIFT — NITRO<br>
     C — CAMERA · R — RADIO<br>
-    TILT PHONE — STEER<br>
     DRAG TO PAN<br>
     PINCH TO WIDEN<br>
     L — LIGHTS
@@ -473,6 +464,12 @@
   </script>
 
   <script src="src/main.js?v=1.0.1" type="module"></script>
-  <script src="music/radio.js?v=1.2.4.4" type="module"></script>
+  <script type="module">
+    if (!matchMedia('(max-width: 700px), (pointer: coarse)').matches) {
+      import('./music/radio.js?v=1.2.4.4').catch((error) => {
+        console.error('[HOOD] Radio could not load:', error);
+      });
+    }
+  </script>
 </body>
 </html>

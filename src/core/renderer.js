@@ -3,6 +3,7 @@ import * as THREE from 'three';
 
 export function createRenderer(container, opts = {}) {
   const maxPixelRatio = opts.maxPixelRatio || 1.75;
+  const mobileLayoutQuery = matchMedia('(max-width: 700px), (pointer: coarse)');
   let scale = 1;
 
   const renderer = new THREE.WebGLRenderer({
@@ -18,7 +19,12 @@ export function createRenderer(container, opts = {}) {
     const width = container?.clientWidth || window.innerWidth;
     const height = container?.clientHeight || window.innerHeight;
     if (!width || !height) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, maxPixelRatio) * scale;
+    const devicePixelRatio = Math.min(
+      window.devicePixelRatio || 1,
+      maxPixelRatio,
+      mobileLayoutQuery.matches ? 1.1 : maxPixelRatio
+    );
+    const dpr = devicePixelRatio * scale;
     renderer.setPixelRatio(dpr);
     renderer.setSize(width, height, false);
   };
@@ -28,6 +34,7 @@ export function createRenderer(container, opts = {}) {
     new ResizeObserver(updateSize).observe(container);
   }
   window.addEventListener('resize', updateSize);
+  mobileLayoutQuery.addEventListener('change', updateSize);
   updateSize();
 
   const canvas = renderer.domElement;

@@ -1026,7 +1026,7 @@
                   <button class="flow-button" type="submit">CREATE PROFILE</button>
                 </div>
               </form>
-              <button id="show-create-profile" class="flow-button secondary profile-add" type="button">+ ADD DRIVER PROFILE</button>
+              <button id="show-create-profile" class="flow-button secondary profile-add" type="button">+ ADD DRIVER</button>
             </section>
 
             <section id="career-hub-view" class="flow-view" hidden>
@@ -1059,6 +1059,13 @@
               <p class="flow-kicker">SHARED GARAGE · VEHICLE SELECTION</p>
               <h2>Choose Car</h2>
               <p id="garage-description" class="flow-description">Pick a car for the selected route.</p>
+              <div id="career-circuit-lap-setting" class="circuit-lap-setting" hidden>
+                <label for="career-circuit-laps">LAP COUNT</label>
+                <select id="career-circuit-laps">
+                  <option value="3">3 LAPS</option>
+                  <option value="5">5 LAPS</option>
+                </select>
+              </div>
               <div id="garage-list" class="garage-list"></div>
               <div class="flow-actions">
                 <button id="garage-back" class="flow-button secondary" type="button">BACK</button>
@@ -1069,7 +1076,7 @@
           <aside class="flow-aside" aria-label="Route preview">
             <div>
               <div class="aside-art">
-                <span class="aside-tag">HOOD · ROUTE NETWORK</span>
+                <span class="aside-tag">HOOD · ROUTE</span>
                 <svg viewBox="0 0 300 160" aria-hidden="true">
                   <path class="track-path" d="M22 104 C44 104 42 46 76 46 H112 C143 46 137 118 170 118 H204 C234 118 225 65 256 65 H278"/>
                   <path class="track-glow" d="M22 104 C44 104 42 46 76 46 H112 C143 46 137 118 170 118 H204 C234 118 225 65 256 65 H278"/>
@@ -1092,7 +1099,7 @@
         <div class="loading-panel">
           <div>
             <p class="micro-label">HOOD · SESSION BUILD</p>
-            <h2>SETTING<br><span>THE GRID.</span></h2>
+            <h2>NAVIGATE<br><span>WITH CONFIDENCE.</span></h2>
             <p id="loading-detail" class="loading-detail">Loading your selected route and vehicle.</p>
             <div class="loading-meter"><i></i></div>
             <div class="loading-steps"><span>ROUTE</span><span>WORLD</span><span>VEHICLE</span><span>START</span></div>
@@ -1462,6 +1469,8 @@
 
     function openGarage(fromPage) {
       returnPage = fromPage;
+      document.getElementById('career-circuit-lap-setting').hidden =
+        selectedMode !== 'career' || selectedRoute.circuit !== true;
       renderGarage();
       setFlowPage('garage');
       document.getElementById('garage-description').textContent =
@@ -1524,7 +1533,12 @@
         autostart: '1',
         hoodFlow: '1'
       });
-      if (circuit) params.set('laps', document.getElementById('circuit-laps').value);
+      if (circuit) {
+        const lapControl = selectedMode === 'career'
+          ? document.getElementById('career-circuit-laps')
+          : document.getElementById('circuit-laps');
+        params.set('laps', lapControl.value);
+      }
       if (selectedMode === 'career' && selectedProfileId) {
         params.set('career', '1');
         params.set('profile', selectedProfileId);
@@ -1605,6 +1619,13 @@
         renderCareerHub();
         setFlowPage('career-hub');
         setScreen('setup');
+        loadCircuitRoutes().then(() => {
+          if (selectedMode === 'career' && currentPage === 'career-hub') renderCareerHub();
+        }).catch((error) => {
+          console.error('[HOOD] Career routes could not be loaded:', error);
+          document.getElementById('aside-copy').textContent =
+            'Career events could not be loaded. Return to the menu and try again.';
+        });
       } else {
         continueCareer(requestedProfile);
         setScreen('setup');

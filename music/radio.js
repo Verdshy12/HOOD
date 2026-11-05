@@ -225,6 +225,7 @@ function ensureCatalogue() {
     state.loaded = true;
     renderWidget();
     renderList();
+    ensureCatalogue();
   })();
 
   return cataloguePromise;
@@ -256,7 +257,8 @@ function renderWidget() {
   root.classList.toggle('is-playing', playing);
   el.play.innerHTML = playing ? ICON.pause : ICON.play;
   el.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
-  el.play.disabled = state.loaded && !hasTracks;
+  el.play.disabled = !state.loaded || !hasTracks;
+  root.classList.toggle('has-status', Boolean(state.status));
 
   el.mute.innerHTML = state.muted || state.volume === 0 ? ICON.mute : ICON.vol;
   el.mute.setAttribute('aria-label', state.muted ? 'Unmute' : 'Mute');
@@ -383,9 +385,12 @@ function loadTrack(i, play) {
   renderList();
 }
 
-async function startPlayback() {
-  if (!state.enabled) return false;
-  await ensureCatalogue();
+function startPlayback() {
+  if (!state.enabled) return Promise.resolve(false);
+  if (!state.loaded) {
+    ensureCatalogue().then(() => flash('Playlist ready · tap play to start'));
+    return Promise.resolve(false);
+  }
 
   if (state.index < 0) {
     const first = findPlayable(-1, 1);
@@ -400,20 +405,31 @@ async function startPlayback() {
   renderWidget();
   renderList();
 
+  let playback;
   try {
-    await audio.play();
-  } catch (err) {
-    if (err && err.name === 'AbortError') return true;        // superseded by another load
-    if (err && err.name === 'NotAllowedError') {
-      state.wantPlay = false;
-      flash('Browser blocked audio — press play again');
-      return false;
-    }
-    // NotSupportedError / load failures are handled by the "error" listener.
+    playback = audio.play();
+  } catch (error) {
+    return handlePlaybackError(error);
+  }
+  return Promise.resolve(playback).then(() => {
+    renderWidget();
+    renderList();
+    return true;
+  }, handlePlaybackError);
+}
+
+function handlePlaybackError(error) {
+  if (error?.name === 'AbortError') return true;
+  state.wantPlay = false;
+  if (error?.name === 'NotAllowedError') {
+    flash('Browser blocked audio — tap play to allow music');
+  } else {
+    console.error('[HOOD Radio] Playback failed:', error);
+    flash(`Unable to play “${current()?.title || 'this track'}”`);
   }
   renderWidget();
   renderList();
-  return true;
+  return false;
 }
 
 function pausePlayback() {
@@ -477,14 +493,6 @@ function restoreRoutePlayback() {
     loadTrack(index, false);
   }
   return true;
-}
-
-function hasSavedRoutePlayback() {
-  try { return sessionStorage.getItem(ROUTE_PLAYBACK_KEY) !== null; }
-  catch (error) {
-    console.warn('[HOOD Radio] Could not check preserved playback:', error);
-    return false;
-  }
 }
 
 function togglePlay() {
@@ -713,7 +721,7 @@ function enable() {
 window.addEventListener('hood:session-started', enable);
 window.addEventListener('hood:route-switching', saveRoutePlayback);
 window.addEventListener('pagehide', saveRoutePlayback);
-if (STANDALONE || (window.__game && window.__game.started) || hasSavedRoutePlayback()) enable();
+if (STANDALONE || (window.__game && window.__game.started)) enable();
 
 // ---------- Public API ----------
 function publicState() {

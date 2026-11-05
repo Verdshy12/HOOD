@@ -230,6 +230,7 @@
   .hr-top { justify-content: center; gap: 0; }
   .hr-art,
   .hr-meta { display: none; }
+  .hood-radio.has-status .hr-meta { display: block; min-width: 0; }
   .hr-progress { display: none; }
   .hr-controls { justify-content: center; gap: 4px; margin: 0; }
   .hr-controls .hr-prev,

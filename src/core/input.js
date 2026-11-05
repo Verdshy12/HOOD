@@ -41,7 +41,9 @@
    let tiltBaseline = null;
    let tiltActive = false;
    let orientationListening = false;
-  let enabled = true;
+   let orientationCheckTimer = 0;
+   let resolveOrientationCheck = null;
+   let enabled = true;
 
    const down = (...values) => values.some((key) => keys.has(key));
 
@@ -70,7 +72,7 @@
 
    const readTilt = (event) => {
      const screenAngle =
-     ((screen.orientation?.angle ?? window.orientation ?? 0) + 360) % 360;
+     ((window.screen?.orientation?.angle ?? window.orientation ?? 0) + 360) % 360;
 
      if (screenAngle === 90) return event.beta;
      if (screenAngle === 270) return -event.beta;
@@ -87,6 +89,7 @@
 
      if (tiltBaseline === null) {
        tiltBaseline = value;
+       resolveOrientationCheck?.(true);
        return;
      }
 
@@ -124,16 +127,34 @@
      tiltSteer = 0;
      tiltActive = true;
 
+     if (!(await checkOrientationAvailability())) {
+       disableTiltSteering();
+       document.body.classList.add("tilt-unavailable");
+       return false;
+     }
+
      document.body.classList.remove("tilt-unavailable");
      document.body.classList.add("tilt-ready");
 
      return true;
    };
 
+   const checkOrientationAvailability = () => new Promise((resolve) => {
+     resolveOrientationCheck = (available) => {
+       clearTimeout(orientationCheckTimer);
+       orientationCheckTimer = 0;
+       resolveOrientationCheck = null;
+       resolve(available);
+     };
+     orientationCheckTimer = setTimeout(() => resolveOrientationCheck?.(false), 1500);
+   });
+
    const disableTiltSteering = () => {
      tiltActive = false;
      tiltBaseline = null;
      tiltSteer = 0;
+     resolveOrientationCheck?.(false);
+     resetControls();
      document.body.classList.remove("tilt-ready", "tilt-unavailable");
    };
 
@@ -238,7 +259,7 @@
          if (!enabled) return state;
          const safeDt = clamp(Number.isFinite(dt) ? dt : 0, 0, 0.05);
 
-         const gamepads = navigator.getGamepads?.() ?? [];
+         const gamepads = globalThis.navigator?.getGamepads?.() ?? [];
          const pad = Array.from(gamepads).find((gamepad) => gamepad?.connected);
 
          const digitalSteer =
