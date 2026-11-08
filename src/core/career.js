@@ -1,10 +1,7 @@
 import { CONFIG } from '../config.js';
 
 const STORAGE_KEY = 'hood.career.v1';
-export const CAREER_ROUTE_ORDER = [
-  'state-house-eastbound',
-  'nairobi-ngara-sprint',
-  'state-house-westbound',
+const CAREER_CIRCUIT_ROUTE_IDS = [
   'ngara-circuit-7',
   'ngara-circuit-6',
   'ngara-circuit-8',
@@ -14,8 +11,29 @@ export const CAREER_ROUTE_ORDER = [
   'ngara-circuit-4',
   'ngara-circuit-1'
 ];
+export const CAREER_CIRCUIT_EVENTS = CAREER_CIRCUIT_ROUTE_IDS.flatMap((routeId) =>
+  [3, 5].map((laps) => ({
+    id: `${routeId}-${laps}-laps`,
+    routeId,
+    laps
+  }))
+);
+const BASE_ROUTE_ORDER = [
+  'state-house-eastbound',
+  'nairobi-ngara-sprint',
+  'state-house-westbound'
+];
+export const CAREER_ROUTE_ORDER = [
+  ...BASE_ROUTE_ORDER,
+  ...CAREER_CIRCUIT_EVENTS.map((event) => event.id)
+];
 const ROUTE_ORDER = CAREER_ROUTE_ORDER;
-const ROUTE_IDS = new Set(ROUTE_ORDER);
+const CIRCUIT_LEGACY_EVENTS = new Map(
+  CAREER_CIRCUIT_EVENTS
+    .filter((event) => event.laps === 3)
+    .map((event) => [event.routeId, event.id])
+);
+const ROUTE_IDS = new Set([...ROUTE_ORDER, ...CIRCUIT_LEGACY_EVENTS.keys()]);
 const CAR_UNLOCKS = new Map(
   Object.entries(CONFIG.cars).map(([id, car]) => [id, car.careerUnlockAt ?? 0])
 );
@@ -32,7 +50,9 @@ function normaliseCareer(value) {
         typeof source.name !== 'string' || !source.name || ids.has(source.id)) continue;
     ids.add(source.id);
     const completedRouteIds = Array.isArray(source.completedRouteIds)
-      ? [...new Set(source.completedRouteIds.filter((id) => ROUTE_IDS.has(id)))]
+      ? [...new Set(source.completedRouteIds
+        .filter((id) => ROUTE_IDS.has(id))
+        .map((id) => CIRCUIT_LEGACY_EVENTS.get(id) || id))]
       : [];
     profiles.push({
       id: source.id,
@@ -73,9 +93,9 @@ export function createCareerStore(storage) {
     snapshot() {
       return clone(career);
     },
-    isEventUnlocked(profileId, routeId) {
+    isEventUnlocked(profileId, eventId) {
       const profile = career.profiles.find((item) => item.id === profileId);
-      const milestone = ROUTE_ORDER.indexOf(routeId);
+      const milestone = ROUTE_ORDER.indexOf(eventId);
       return !!profile && milestone >= 0 && profile.eventsCompleted >= milestone;
     },
     isCarUnlocked(profileId, carId) {
@@ -98,15 +118,15 @@ export function createCareerStore(storage) {
       career.profiles.push(profile);
       return { profile: clone(profile), persisted: persist() };
     },
-    completeEvent(profileId, routeId) {
-      if (typeof profileId !== 'string' || !profileId || !ROUTE_IDS.has(routeId)) {
+    completeEvent(profileId, eventId) {
+      if (typeof profileId !== 'string' || !profileId || !ROUTE_ORDER.includes(eventId)) {
         return { saved: false, persisted: false };
       }
       const profile = career.profiles.find((item) => item.id === profileId);
       if (!profile) return { saved: false, persisted: false };
-      const alreadyCompleted = profile.completedRouteIds.includes(routeId);
+      const alreadyCompleted = profile.completedRouteIds.includes(eventId);
       if (!alreadyCompleted) {
-        profile.completedRouteIds.push(routeId);
+        profile.completedRouteIds.push(eventId);
         profile.eventsCompleted = Math.max(profile.eventsCompleted, profile.completedRouteIds.length);
       }
       return {

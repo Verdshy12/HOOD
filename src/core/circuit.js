@@ -1,7 +1,7 @@
 // HOOD Circuit Timing Engine
 // Independent of Three.js, DOM and rendering.
 
-export const CIRCUIT_LAP_OPTIONS = Object.freeze([3, 5]);
+export const CIRCUIT_LAP_OPTIONS = Object.freeze([1, 2, 3, 4, 5]);
 
 const DEFAULT_MIN_LAP_MS = 5000;
 
@@ -103,7 +103,7 @@ export function createCircuitSession({
   minLapMs = DEFAULT_MIN_LAP_MS
 } = {}) {
   if (!CIRCUIT_LAP_OPTIONS.includes(laps)) {
-    throw new Error('Circuit events support 3 or 5 laps.');
+    throw new Error('Circuit events support between 1 and 5 laps.');
   }
 
   if (!routeId) {

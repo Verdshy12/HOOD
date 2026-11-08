@@ -249,10 +249,46 @@
   </div>
 
   <div class="hud speed">
-    <strong id="speed">000</strong><span>KM/H</span>
-    <div class="rpm"><div id="rpmFill"></div></div>
-    <span id="rpmText">0 RPM</span>
-    <div class="gear" id="gear">N</div>
+    <div class="speedometer" role="img" aria-label="Speedometer: 0 kilometers per hour">
+      <svg id="speedometer-dial" viewBox="0 0 260 260" aria-hidden="true">
+        <defs>
+          <radialGradient id="dial-face" cx="50%" cy="42%" r="62%">
+            <stop offset="0" stop-color="#1b2328"/>
+            <stop offset=".72" stop-color="#080c0f"/>
+            <stop offset="1" stop-color="#020405"/>
+          </radialGradient>
+          <linearGradient id="dial-bezel" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#f2f5f6"/>
+            <stop offset=".28" stop-color="#53616a"/>
+            <stop offset=".62" stop-color="#dce2e5"/>
+            <stop offset="1" stop-color="#3d484e"/>
+          </linearGradient>
+          <filter id="needle-glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="1.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <circle class="dial-bezel" cx="130" cy="130" r="127"/>
+        <circle class="dial-face" cx="130" cy="130" r="121"/>
+        <circle class="dial-inner-ring" cx="130" cy="130" r="108"/>
+        <g id="speedometer-kph-ticks" class="speedometer-ticks kph-ticks"></g>
+        <g id="speedometer-mph-ticks" class="speedometer-ticks mph-ticks"></g>
+        <g id="speedometer-kph-labels" class="speedometer-labels kph-labels"></g>
+        <g id="speedometer-mph-labels" class="speedometer-labels mph-labels"></g>
+        <text class="dial-unit" x="130" y="91">KM/H</text>
+        <text class="dial-secondary-unit" x="130" y="190">MPH</text>
+        <g id="speedometer-needle" class="speedometer-needle" transform="rotate(-135 130 130)">
+          <path class="needle-tail" d="M126 134 128 148 132 148 134 134Z"/>
+          <path class="needle-shaft" d="M127 133 129 47 130 36 131 47 133 133Z"/>
+        </g>
+        <circle class="needle-hub-outer" cx="130" cy="130" r="9"/>
+        <circle class="needle-hub-inner" cx="130" cy="130" r="4"/>
+        <rect class="speed-lcd" x="77" y="207" width="106" height="31" rx="4"/>
+        <text id="speed" class="speed-lcd-value" x="127" y="229">000</text>
+        <text class="speed-lcd-unit" x="132" y="228">KM/H</text>
+        <text id="gear" class="gear-lcd" x="169" y="228">N</text>
+      </svg>
+    </div>
   </div>
 
   <div id="help">
@@ -323,7 +359,12 @@
       const routeNames = {
         "state-house-eastbound": "State House Avenue · Eastbound",
         "state-house-westbound": "State House Avenue · Westbound",
-        "nairobi-ngara-sprint": "Ngara Sprint · Kinyanjui Street"
+        "nairobi-ngara-sprint": "Ngara Sprint · Kinyanjui Street",
+        "mombasa-sprint-1": "Nyali Bridge Sprint",
+        "mombasa-sprint-2": "Kizingo Coast Sprint",
+        "mombasa-circuit-1": "Mombasa Circuit 1",
+        "mombasa-circuit-2": "Mombasa Circuit 2",
+        "mombasa-free-drive": "Mombasa Island & Nyali"
       };
       const carNames = {
         dodge: "Dodge Challenger R/T",
@@ -434,7 +475,7 @@
         const routeName = document.getElementById("routeName");
         if (route && routeName) {
           routeName.textContent = params.get("mode") === "free-drive" && params.get("career") !== "1"
-            ? "FREE DRIVE · NAIROBI"
+            ? `FREE DRIVE · ${String(route.city || "Nairobi").toUpperCase()}`
             : route.short.toUpperCase() + " · " + route.name.toUpperCase();
         }
 

@@ -10,18 +10,18 @@ import { createRenderer, createDebugOverlay } from './core/renderer.js?v=1.2.5';
 import { QualityScaler } from './core/quality.js';
 import { createInput } from './core/input.js?v=1.2.12';
 import {
-  createVehicle, stepVehicle, applyImpact, CAR
+  createVehicle, stepVehicle, applyImpact
 } from './car/vehicle.js';
 import { resolveVehiclePhysics }from './physics/vehicleProfiles.js';
 import { rigCar } from './car/carRig.js';
 import { StaticWorld, collideCar } from './world/staticWorld.js';
-import { buildRoadMesh, buildBuildingMesh, buildRouteMarkings } from './world/meshes.js';
+import { buildRoadMesh, buildBuildingMesh, buildRouteMarkings, buildRouteBarricades } from './world/meshes.js';
 import { buildRoute, sampleAt, trackProgress } from './world/routes.js';
 import { preloadMusic } from '../music/preload.js';
 import { rigSteeringWheel, flashMesh, scanNearby, previewSplit } from './car/steeringWheel.js';
 import { createCarLights } from './car/carLights.js';
 import { createStatsStore } from './core/persistence.js';
-import { createCareerStore } from './core/career.js';
+import { CAREER_CIRCUIT_EVENTS, createCareerStore } from './core/career.js';
 import {
   createCircuitSession,
   formatLapTime,
@@ -63,6 +63,59 @@ const text = (() => {
     }
   };
 })();
+
+function drawSpeedometerScale() {
+  const namespace = 'http://www.w3.org/2000/svg';
+  const centerX = 130;
+  const centerY = 130;
+  const createMark = (parent, value, max, innerRadius, outerRadius, className) => {
+    const angle = THREE.MathUtils.degToRad(135 + value / max * 270);
+    const x1 = centerX + Math.cos(angle) * innerRadius;
+    const y1 = centerY + Math.sin(angle) * innerRadius;
+    const x2 = centerX + Math.cos(angle) * outerRadius;
+    const y2 = centerY + Math.sin(angle) * outerRadius;
+    const mark = document.createElementNS(namespace, 'path');
+    mark.setAttribute('d', `M${x1.toFixed(2)} ${y1.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}`);
+    mark.setAttribute('class', className);
+    parent.append(mark);
+  };
+  const createLabel = (parent, value, max, radius) => {
+    const angle = THREE.MathUtils.degToRad(135 + value / max * 270);
+    const label = document.createElementNS(namespace, 'text');
+    label.setAttribute('x', (centerX + Math.cos(angle) * radius).toFixed(2));
+    label.setAttribute('y', (centerY + Math.sin(angle) * radius).toFixed(2));
+    label.textContent = String(value);
+    parent.append(label);
+  };
+
+  const kphTicks = $('speedometer-kph-ticks');
+  const kphLabels = $('speedometer-kph-labels');
+  const mphTicks = $('speedometer-mph-ticks');
+  const mphLabels = $('speedometer-mph-labels');
+  if (!kphTicks || !kphLabels || !mphTicks || !mphLabels) return;
+
+  for (let kph = 0; kph <= 220; kph += 5) {
+    const major = kph % 20 === 0;
+    const medium = kph % 10 === 0;
+    createMark(
+      kphTicks,
+      kph,
+      220,
+      major ? 99 : medium ? 104 : 108,
+      116,
+      major ? 'major' : medium ? 'medium' : 'minor'
+    );
+    if (major) createLabel(kphLabels, kph, 220, 88);
+  }
+
+  for (let mph = 0; mph <= 140; mph += 5) {
+    const major = mph % 10 === 0;
+    createMark(mphTicks, mph, 140, major ? 73 : 76, 80, major ? 'major' : 'minor');
+    if (major) createLabel(mphLabels, mph, 140, 62);
+  }
+}
+
+drawSpeedometerScale();
 
 const debug = new URLSearchParams(location.search).has('debug');
 const mobileLayoutQuery = matchMedia('(max-width: 700px), (pointer: coarse)');
@@ -229,7 +282,7 @@ function completeCareerEvent() {
   if (!game.session?.profileId) return;
   const progress = careerStore.completeEvent(
     game.session.profileId,
-    game.session.routeId
+    game.session.careerEventId
   );
   if (progress.saved && !progress.persisted) {
     console.warn('[HOOD] Career progress could not be saved to local storage.');
@@ -895,11 +948,19 @@ async function loadRoute(routeId, opts = {}) {
 
     const carId = opts.carId || game.defaultCar || C.defaultCar || 'dodge';
     const profileId = params.get('career') === '1' ? params.get('profile') : null;
+    const careerEventId = params.get('careerEvent') || routeId;
     if (params.get('career') === '1' &&
         (!profileId || !careerStore.snapshot().profiles.some((profile) => profile.id === profileId))) {
       throw new Error('Career profile not found. Return to HOOD and choose a saved profile.');
     }
-    if (profileId && !careerStore.isEventUnlocked(profileId, routeId)) {
+    if (profileId && mode === 'circuit') {
+      const event = CAREER_CIRCUIT_EVENTS.find((item) => item.id === careerEventId);
+      if (params.get('career') === '1' &&
+          (!event || event.routeId !== routeId || event.laps !== Number(params.get('laps')))) {
+        throw new Error('Career circuit event does not match the selected route and lap count.');
+      }
+    }
+    if (profileId && !careerStore.isEventUnlocked(profileId, careerEventId)) {
       throw new Error('Career event is locked. Complete an available event to unlock this route.');
     }
     if (profileId && !careerStore.isCarUnlocked(profileId, carId)) {
@@ -913,6 +974,7 @@ async function loadRoute(routeId, opts = {}) {
     game.session = {
       carId,
       routeId,
+      careerEventId,
       mode,
       profileId
     };
@@ -924,7 +986,7 @@ async function loadRoute(routeId, opts = {}) {
       navigationMap.setAttribute(
         'aria-label',
         isOpenFreeDrive
-          ? 'Nairobi road network map showing your position and direction'
+          ? `${route.city || 'Nairobi'} road network map showing your position and direction`
           : 'Route map showing your position and direction'
       );
     }
@@ -932,7 +994,9 @@ async function loadRoute(routeId, opts = {}) {
     if (navigationMapLabel) navigationMapLabel.textContent = isOpenFreeDrive ? 'ROAD NETWORK' : 'ROUTE MAP';
     document.body.classList.toggle('navigation-map-active', navigationMapEnabled);
     const routeName = $('routeName');
-    if (routeName) routeName.textContent = isOpenFreeDrive ? 'FREE DRIVE · NAIROBI' : route.name;
+    if (routeName) routeName.textContent = isOpenFreeDrive
+      ? `FREE DRIVE · ${String(route.city || 'Nairobi').toUpperCase()}`
+      : route.name;
     for (const id of ['routeLeft', 'routeEta']) {
       const row = $(id)?.parentElement;
       if (row) row.hidden = isOpenFreeDrive;
@@ -966,7 +1030,8 @@ async function loadRoute(routeId, opts = {}) {
     });
 
     await progress(0.2, 'Mapping the streets');
-    const world = new StaticWorld(tile);
+    const routeBarricades = mode === 'race' ? route.barricades || [] : [];
+    const world = new StaticWorld(tile, routeBarricades);
     game.world = world;
 
     await progress(0.32, 'Laying the tarmac');
@@ -992,6 +1057,12 @@ async function loadRoute(routeId, opts = {}) {
     const buildingMesh = buildBuildingMesh(tile.buildings);
     added.push(buildingMesh);
     scene.add(buildingMesh);
+
+    if (routeBarricades.length) {
+      const barricadeMesh = buildRouteBarricades(route);
+      added.push(barricadeMesh);
+      scene.add(barricadeMesh);
+    }
 
     await progress(0.65, 'Parking the car');
     let carGltf = engine.gltf;
@@ -1255,7 +1326,7 @@ async function loadRoute(routeId, opts = {}) {
       const etaText = `${String(Math.floor(etaSeconds / 60)).padStart(2, '0')}:${String(etaSeconds % 60).padStart(2, '0')}`;
       const passedLandmarks = routeLandmarks.filter((landmark) => landmark.s <= prog.s);
       const locationText = isOpenFreeDrive
-        ? 'Nairobi road network'
+        ? `${route.city || 'Nairobi'} road network`
         : passedLandmarks.at(-1)?.name || routeLandmarks[0]?.name || route.name;
       if (!isOpenFreeDrive) {
         text('routeLeft', remainingText);
@@ -1414,17 +1485,22 @@ async function loadRoute(routeId, opts = {}) {
 
       camera.updateProjectionMatrix();
 
-      text('speed', String(Math.round(s.speed * 3.6)).padStart(3, '0'));
-      text('dashboardSpeed', `${Math.round(s.speed * 3.6)} KM/H`);
+      const speedKph = Math.round(s.speed * 3.6);
+      text('speed', String(speedKph).padStart(3, '0'));
+      const speedometer = $('speedometer-needle')?.closest('.speedometer');
+      if (speedometer) {
+        const gaugeSpeed = THREE.MathUtils.clamp(speedKph, 0, 220);
+        const gaugeAngle = -135 + gaugeSpeed / 220 * 270;
+        speedometer.setAttribute(
+          'aria-label',
+          `Speedometer: ${speedKph} kilometers per hour${speedKph > 220 ? ', beyond dial range' : ''}${s.reverse ? ', reversing' : ''}`
+        );
+        $('speedometer-needle').setAttribute('transform', `rotate(${gaugeAngle} 130 130)`);
+      }
+      text('dashboardSpeed', `${speedKph} KM/H`);
       text('dashboardRpm', `${Math.round(s.rpm)} RPM`);
       text('dashboardGear', s.reverse ? 'R' : s.speed < 0.5 && s.throttle < 0.05 ? 'N' : `D${s.gear + 1}`);
       text('dashboardNitro', `${Math.round(s.nitro * 100)}%`);
-
-
-      text('rpmText', Math.round(s.rpm / 10) * 10 + ' RPM');
-      const rpmFill = $('rpmFill');
-      if (rpmFill) rpmFill.style.width = (s.rpm / CAR.redline) * 100 + '%';
-
       text(
         'gear',
         s.reverse ? 'R' : s.speed < 0.5 && s.throttle < 0.05 ? 'N' : 'D' + (s.gear + 1)

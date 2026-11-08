@@ -43,9 +43,16 @@ test('creates a three-lap circuit session', () => {
 
 test('rejects unsupported lap counts', () => {
   assert.throws(
-    () => createCircuitSession({ route, laps: 4 }),
-    /support 3 or 5/
+    () => createCircuitSession({ route, laps: 6 }),
+    /between 1 and 5/
   );
+});
+
+test('supports every circuit lap count from one through five', () => {
+  for (let laps = 1; laps <= 5; laps++) {
+    assert.equal(createCircuitSession({ route, laps }).targetLaps, laps);
+  }
+  assert.throws(() => createCircuitSession({ route, laps: 0 }), /between 1 and 5/);
 });
 
 test('first start-finish crossing starts the event', () => {
@@ -103,7 +110,7 @@ test('live circuit catalogue contains closed, buildable routes', () => {
   );
   const routes = catalogue.routes.filter((item) => item.circuit === true && item.mode === 'circuit');
 
-  assert.equal(routes.length, 8);
+  assert.equal(routes.length, 10);
   for (const circuit of routes) {
     assert.ok(circuit.pts.length >= 8);
     assert.ok(Math.hypot(

@@ -98,41 +98,76 @@ canvas {
 .speed {
   right: 22px;
   top: 20px;
-  text-align: right;
-  color: #20c8ff;
+  width: 276px;
+  color: #f3f5f6;
 }
 
-.speed strong {
-  display: block;
-  font-size: 38px;
+.speedometer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 10px 24px rgba(0,0,0,.65));
 }
 
-.speed span {
-  font-size: 11px;
-  letter-spacing: 2px;
+.speedometer svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.dial-bezel { fill: url(#dial-bezel); }
+.dial-face { fill: url(#dial-face); stroke: #222b30; stroke-width: 1; }
+.dial-inner-ring { fill: none; stroke: rgba(209,220,224,.18); stroke-width: 1; }
+.speedometer-ticks path { fill: none; stroke-linecap: round; }
+.kph-ticks path { stroke: rgba(243,246,247,.82); }
+.kph-ticks .minor { stroke-width: 1.1; opacity: .8; }
+.kph-ticks .medium { stroke-width: 1.5; }
+.kph-ticks .major { stroke: #f4f6f7; stroke-width: 2; }
+.mph-ticks path { stroke: rgba(176,191,198,.65); }
+.mph-ticks .minor { stroke-width: .8; opacity: .7; }
+.mph-ticks .major { stroke-width: 1.4; }
+.mph-labels {
+  fill: #aeb9be;
+  font: 600 7px Arial, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: middle;
 }
-
-.gear {
-  font-size: 30px;
-  font-weight: bold;
-  color: #fff;
-  margin-top: 6px;
+.kph-labels {
+  fill: #fff;
+  font: 700 11px Arial, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: middle;
 }
-
-.rpm {
-  width: 170px;
-  height: 8px;
-  background: #0a1a26;
-  border: 1px solid #20c8ff55;
-  margin: 6px 0 2px auto;
-  border-radius: 4px;
-  overflow: hidden;
+.dial-unit {
+  fill: #aeb9be;
+  font: 600 6px Arial, sans-serif;
+  letter-spacing: 1px;
+  text-anchor: middle;
 }
-
-#rpmFill {
-height: 100%;
-width: 0;
-background: #20c8ff;
+.dial-secondary-unit {
+  fill: #aeb9be;
+  font: 600 6px Arial, sans-serif;
+  letter-spacing: 1px;
+  text-anchor: middle;
+}
+.needle-tail { fill: #9e1820; }
+.needle-shaft { fill: #f52a32; stroke: #ff8181; stroke-width: .8; filter: url(#needle-glow); }
+.needle-hub-outer { fill: #b6bec2; stroke: #333c40; stroke-width: 2; }
+.needle-hub-inner { fill: #541319; }
+.speedometer[aria-label*="beyond dial range"] .needle-shaft { fill: #ff742f; }
+.speed-lcd { fill: #090e0d; stroke: #626c67; stroke-width: 1; }
+.speed-lcd-value {
+  fill: #b9e8bc;
+  font: 700 15px/1 monospace;
+  text-anchor: end;
+  dominant-baseline: auto;
+  filter: drop-shadow(0 0 2px rgba(132,255,158,.45));
+}
+.speed-lcd-unit {
+  fill: #a9c5ad;
+  font: 600 5px Arial, sans-serif;
+  letter-spacing: .5px;
+}
+.gear-lcd {
+  fill: #e5e9e9;
+  font: 700 8px Arial, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: auto;
 }
 
 .bottom {
@@ -1030,14 +1065,9 @@ body .route {
     right: auto;
     bottom: auto;
     left: calc(20px + var(--sal));
-    width: 190px;
-    padding: 10px 12px;
-    border-left: 2px solid #20c8ff;
-    background: rgba(5,12,17,.82);
-    text-align: left;
+    width: 246px;
+    padding: 0;
   }
-  body .hud.speed strong { font-size: 34px; line-height: 1; }
-  body .hud.speed .rpm { width: 100%; margin-left: 0; }
   body .route {
     top: calc(14px + var(--sat));
     right: calc(14px + var(--sar));
@@ -1051,23 +1081,16 @@ body .route {
     top: calc(52px + var(--sat));
     right: auto;
     left: calc(12px + var(--sal));
-    width: 124px;
+    width: 142px;
   }
   body.mobile-layout .hud.speed {
     display: block;
     top: calc(104px + var(--sat));
     right: auto;
     left: calc(12px + var(--sal));
-    width: 124px;
-    padding: 7px 9px;
-    border-left: 2px solid #20c8ff;
-    background: rgba(5,12,17,.82);
-    text-align: left;
+    width: 178px;
+    padding: 0;
   }
-  body.mobile-layout .hud.speed strong { font-size: 28px; line-height: 1; }
-  body.mobile-layout .hud.speed span { font-size: 9px; }
-  body.mobile-layout .hud.speed .rpm { width: 100%; margin: 5px 0 2px; }
-  body.mobile-layout .hud.speed .gear { margin-top: 2px; font-size: 20px; }
 }
 
 @media (max-height: 480px) and (orientation: landscape) {
@@ -1076,7 +1099,7 @@ body .route {
   .route-row { margin-bottom: 2px; }
   #menuBtn { min-height: 38px; margin-top: 4px; }
   body.mobile-layout .boost-panel { top: calc(44px + var(--sat)); }
-  body.mobile-layout .hud.speed { top: calc(94px + var(--sat)); }
+  body.mobile-layout .hud.speed { top: calc(94px + var(--sat)); width: 158px; }
   .overlay-panel { padding: 16px 22px; }
   .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

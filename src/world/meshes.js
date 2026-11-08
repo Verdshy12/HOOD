@@ -6,6 +6,110 @@ const ROAD_COLOR = [0x292c30, 0x2c2f33, 0x303338, 0x33363a, 0x36393d, 0x393c40, 
 const BUILDING_COLORS = [0xb8b2a4, 0xc8c0ad, 0xaaa9a1, 0xd1c7b5, 0x8f999a];
 const MURRAM_COLOR = 0x716447;
 const PAVED_COLOR = 0x52575a;
+const POLICE_WHITE = new THREE.MeshStandardMaterial({ color: 0xe7e9e9, roughness: 0.7 });
+const POLICE_BLACK = new THREE.MeshStandardMaterial({ color: 0x202428, roughness: 0.8 });
+const POLICE_BLUE = new THREE.MeshStandardMaterial({ color: 0x115e9a, roughness: 0.65 });
+const POLICE_GLASS = new THREE.MeshStandardMaterial({ color: 0x172b38, roughness: 0.35, metalness: 0.1 });
+const POLICE_RED = new THREE.MeshStandardMaterial({ color: 0xd52f39, roughness: 0.6 });
+const BARRIER_RED = new THREE.MeshStandardMaterial({ color: 0xd92d25, roughness: 0.8 });
+const BARRIER_WHITE = new THREE.MeshStandardMaterial({ color: 0xf2eee3, roughness: 0.8 });
+const BARRIER_POST = new THREE.MeshStandardMaterial({ color: 0xffb52e, roughness: 0.8 });
+
+function box(width, height, depth, material, x, y, z) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth));
+  mesh.position.set(x, y, z);
+  mesh.userData.material = material;
+  return mesh;
+}
+
+function mergedMesh(parts, material) {
+  for (const part of parts) {
+    part.updateMatrix();
+    part.geometry.applyMatrix4(part.matrix);
+  }
+  const geometry = mergeGeometries(parts.map((part) => part.geometry), false);
+  for (const part of parts) part.geometry.dispose();
+  return new THREE.Mesh(geometry, material);
+}
+
+function addPoliceCar(parent) {
+  const car = new THREE.Group();
+  car.position.z = 3.8;
+  const partsByMaterial = new Map();
+  const addPart = (part) => {
+    const parts = partsByMaterial.get(part.userData.material) || [];
+    parts.push(part);
+    partsByMaterial.set(part.userData.material, parts);
+  };
+  addPart(box(2.05, 0.65, 4.4, POLICE_WHITE, 0, 0.65, 0));
+  addPart(box(1.75, 0.14, 1.35, POLICE_BLUE, 0, 0.94, 0.35));
+  addPart(box(1.68, 0.62, 2.1, POLICE_GLASS, 0, 1.13, -0.1));
+  addPart(box(1.83, 0.16, 1.05, POLICE_WHITE, 0, 1.47, -0.08));
+  addPart(box(0.35, 0.15, 0.4, POLICE_RED, -0.28, 1.57, -0.1));
+  addPart(box(0.35, 0.15, 0.4, POLICE_BLUE, 0.28, 1.57, -0.1));
+
+  for (const x of [-1.03, 1.03]) {
+    for (const z of [-1.35, 1.35]) {
+      const wheel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.36, 0.36, 0.24, 10)
+      );
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(x, 0.38, z);
+      wheel.userData.material = POLICE_BLACK;
+      addPart(wheel);
+    }
+  }
+  for (const x of [-1.045, 1.045]) {
+    addPart(box(0.08, 0.22, 2.6, POLICE_BLUE, x, 0.72, 0));
+  }
+  for (const [material, parts] of partsByMaterial) car.add(mergedMesh(parts, material));
+  parent.add(car);
+}
+
+/** Place marked police cars and full-width road gates at route-defined closed junctions. */
+export function buildRouteBarricades(route) {
+  if (!route.barricades?.length) return null;
+
+  const barricades = new THREE.Group();
+
+  for (const definition of route.barricades) {
+    const { x, z, roadHeading, width } = definition;
+    const gate = new THREE.Group();
+    gate.position.set(x, 0, z);
+    gate.rotation.y = -roadHeading;
+
+    const stripeCount = Math.ceil(width / 0.9);
+    const stripeWidth = width / stripeCount;
+    const stripes = new Map([[BARRIER_RED, []], [BARRIER_WHITE, []]]);
+    for (let i = 0; i < stripeCount; i++) {
+      const material = i % 2 ? BARRIER_RED : BARRIER_WHITE;
+      stripes.get(material).push(box(
+        stripeWidth * 0.82,
+        0.42,
+        0.3,
+        material,
+        -width / 2 + stripeWidth * (i + 0.5),
+        0.8,
+        0
+      ));
+    }
+    for (const [material, parts] of stripes) gate.add(mergedMesh(parts, material));
+
+    const posts = [];
+    for (const xOffset of [-width / 2, width / 2]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.9, 8));
+      post.position.set(xOffset, 0.45, 0);
+      post.userData.material = BARRIER_POST;
+      posts.push(post);
+    }
+    gate.add(mergedMesh(posts, BARRIER_POST));
+
+    addPoliceCar(gate);
+    barricades.add(gate);
+  }
+
+  return barricades;
+}
 
 /** Roads: one quad per segment + a small disc at each joint (fills bend gaps, can never fold over like a mitered ribbon).
  *  Tiny y-offset per rank so crossing roads never z-fight. Whole network = 1 mesh. */
@@ -231,9 +335,9 @@ export function buildRoadMesh(roads, options = {}) {
 
     if (!bucket.pos.length || !bucket.idx.length) continue;
 
-    positions.push(...bucket.pos);
-    colors.push(...bucket.col);
-    uvs.push(...bucket.uv);
+    for (const value of bucket.pos) positions.push(value);
+    for (const value of bucket.col) colors.push(value);
+    for (const value of bucket.uv) uvs.push(value);
 
     for (const index of bucket.idx) {
       indices.push(index + vertexOffset);

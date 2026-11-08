@@ -784,7 +784,7 @@
       background: linear-gradient(145deg, rgba(29,35,39,.94), rgba(13,17,20,.94));
       box-shadow: 0 24px 70px rgba(0,0,0,.27);
     }
-    .flow-panel { min-height: 440px; padding: clamp(20px, 3vw, 34px); }
+    .flow-panel { min-height: 440px; max-height: min(76vh, 900px); padding: clamp(20px, 3vw, 34px); overflow-y: auto; }
     .flow-view[hidden] { display: none; }
     .flow-view h2 { margin: 0 0 9px; font: 800 clamp(1.7rem, 4vw, 2.7rem)/1 Impact, "Arial Narrow", sans-serif; letter-spacing: -.02em; }
     .flow-description { margin: 0 0 23px; color: rgba(255,255,255,.62); font: 500 12px/1.6 Arial, sans-serif; }
@@ -868,16 +868,36 @@
     }
     .career-summary strong { display: block; font: 800 13px/1.2 Arial, sans-serif; }
     .career-summary span { display: block; margin-top: 5px; color: rgba(255,255,255,.58); font: 700 9px/1.3 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    .career-unlocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 0 0 14px; }
+    .career-unlock-stat { padding: 11px 13px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: rgba(255,255,255,.025); }
+    .career-unlock-stat strong { display: block; font: 800 12px/1.3 Arial, sans-serif; }
+    .career-unlock-stat small { display: block; margin-top: 5px; color: rgba(255,255,255,.54); font: 700 8px/1.3 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+    .career-car-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+    .career-car-chip { padding: 6px 8px; border: 1px solid rgba(255,179,71,.24); border-radius: 999px; color: var(--accent); background: rgba(255,179,71,.07); font: 700 8px/1 Arial, sans-serif; letter-spacing: .04em; }
     .career-events { margin-top: 9px; }
+    #career-events { max-height: 38vh; overflow-y: auto; padding-right: 4px; }
     .career-event { min-height: 62px; }
     .career-event:disabled { opacity: .45; cursor: not-allowed; }
     .event-status { color: var(--accent); font: 800 9px/1 Arial, sans-serif; letter-spacing: .1em; }
     .route-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .route-card { min-height: 122px; align-items: flex-start; flex-direction: column; justify-content: space-between; }
-    .route-card::before { content: ""; width: 100%; height: 3px; border-radius: 3px; background: linear-gradient(90deg, var(--accent), transparent); }
+    .route-card { min-height: 174px; align-items: stretch; flex-direction: column; justify-content: space-between; }
+    .route-map { display: block; width: 100%; height: 84px; border-radius: 7px; background: radial-gradient(ellipse at center, rgba(255,179,71,.08), rgba(0,0,0,.2)); }
+    .route-map polyline { fill: none; stroke: rgba(255,255,255,.28); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+    .route-map .route-map-line { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 6 5; }
+    .route-map circle { fill: var(--green); }
+    .route-card-copy { display: flex; align-items: flex-end; justify-content: space-between; gap: 9px; }
+    .route-card-copy > span:first-child { min-width: 0; }
     .route-distance { color: var(--accent); font: 800 10px/1 Arial, sans-serif; letter-spacing: .14em; }
-    .garage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .garage-card { min-height: 92px; }
+    .garage-preview { position: relative; height: clamp(160px, 26vh, 260px); margin: 0 0 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; background: radial-gradient(ellipse at 50% 70%, rgba(255,179,71,.2), transparent 56%), linear-gradient(180deg, rgba(255,255,255,.055), rgba(0,0,0,.2)); }
+    #garage-preview-canvas { display: block; width: 100%; height: 100%; }
+    .garage-preview-name { position: absolute; left: 13px; bottom: 11px; color: white; font: 800 12px/1.2 Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 2px 8px #000; pointer-events: none; }
+    .garage-preview-status { position: absolute; right: 12px; bottom: 12px; color: rgba(255,255,255,.62); font: 700 8px/1.2 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; pointer-events: none; }
+    .garage-list { display: flex; gap: 8px; min-width: 0; overflow-x: auto; padding: 3px 2px 8px; scrollbar-color: var(--accent) rgba(255,255,255,.08); }
+    .garage-card { flex: 0 0 auto; min-height: 42px; padding: 0 13px; border-radius: 9px; }
+    .garage-card strong { white-space: nowrap; font-size: 10px; }
+    .garage-card small, .garage-card .car-chip { display: none; }
+    .garage-carousel { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; margin-top: 4px; }
+    .garage-carousel .flow-button { min-width: 92px; padding: 0 11px; }
     .garage-card.locked { opacity: .42; cursor: not-allowed; }
     .garage-card.locked:hover { transform: none; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.035); }
     .garage-card > span:nth-child(2) { flex: 1; min-width: 0; }
@@ -936,7 +956,7 @@
       .mode-card-button { min-height: 66px; padding: 10px 13px; }
       .flow-screen { padding: 14px; }
       .flow-layout { grid-template-columns: 1fr; }
-      .flow-panel { min-height: 0; padding: 20px; }
+      .flow-panel { min-height: 0; max-height: none; padding: 20px; }
       .flow-aside { display: none; }
       .flow-footer { margin-top: 12px; }
       .loading-panel { grid-template-columns: 1fr; gap: 19px; }
@@ -946,9 +966,9 @@
       .world-status, .home-footer span:last-child { display: none; }
       .home-hero h2 { font-size: 3rem; }
       .home-stats { gap: 17px; }
-      .route-list, .garage-list { grid-template-columns: 1fr; }
-      .route-card { min-height: 75px; }
-      .garage-card { min-height: 68px; }
+      .route-list { grid-template-columns: 1fr; }
+      .route-card { min-height: 150px; }
+      .garage-carousel .flow-button { min-width: 72px; padding: 0 7px; font-size: 8px; }
       .flow-header h1 { font-size: 11px; }
     }
   </style>
@@ -978,26 +998,26 @@
           <div class="home-hero">
             <p class="micro-label">THE STREETS ARE YOURS</p>
             <h2><span>DRIVE</span><br>KWA HOOD.</h2>
-            <p>Build your name & discover Nairobi's routes.</p>
+            <p>Build your name & discover Kenya's streets.</p>
             <div class="home-stats">
-              <div><strong>03</strong><span>LIVE ROUTES</span></div>
+              <div><strong>10</strong><span>CLOSED CIRCUITS</span></div>
               <div><strong id="home-garage-count">00</strong><span>GARAGE CARS</span></div>
-              <div><strong>03</strong><span>EVENT TO DRIVE IN</span></div>
+              <div><strong>19</strong><span>CAREER EVENTS</span></div>
             </div>
           </div>
           <nav class="mode-menu" aria-label="Choose a game mode">
             <p class="micro-label">CHOOSE YOUR EXPERIENCE</p>
             <button class="mode-card-button" type="button" data-mode-choice="career">
-              <span class="mode-index">01</span><span class="mode-copy"><strong>Career mode</strong><small>Build a profile. Earn your next unlock.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+              <span class="mode-index">01</span><span class="mode-copy"><strong>Career mode</strong><small>Build a profile. Clear events and earn cars.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
             </button>
             <button class="mode-card-button" type="button" data-mode-choice="circuit">
-              <span class="mode-index">02</span><span class="mode-copy"><strong>Circuit mode</strong><small>Race eight closed tracks in three- or five-lap events.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+              <span class="mode-index">02</span><span class="mode-copy"><strong>Circuit mode</strong><small>Race ten Nairobi and Mombasa circuits with one to five laps.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
             </button>
             <button class="mode-card-button" type="button" data-mode-choice="sprint">
               <span class="mode-index">03</span><span class="mode-copy"><strong>Sprint mode</strong><small>Hit the checkpoints. Own the clock.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
             </button>
             <button class="mode-card-button" type="button" data-mode-choice="free-drive">
-              <span class="mode-index">04</span><span class="mode-copy"><strong>Free Drive</strong><small>Explore Nairobi. Choose your road and drive at your own pace.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+              <span class="mode-index">04</span><span class="mode-copy"><strong>Free Drive</strong><small>Explore Nairobi or Mombasa at your own pace.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
             </button>
           </nav>
         </div>
@@ -1037,6 +1057,11 @@
                 <div><strong id="career-profile-name">DRIVER</strong><span id="career-rank">ROOKIE DRIVER</span></div>
                 <div><strong id="career-event-count">0</strong><span>EVENTS CLEARED</span></div>
               </div>
+              <div class="career-unlocks">
+                <div class="career-unlock-stat"><strong id="career-race-count">0</strong><small>RACES UNLOCKED</small></div>
+                <div class="career-unlock-stat"><strong id="career-car-count">0</strong><small>CARS UNLOCKED</small></div>
+              </div>
+              <div id="career-unlocked-cars" class="career-car-list" aria-label="Unlocked cars"></div>
               <p id="career-storage-warning" class="flow-description" hidden>This profile could not be saved by this browser and will only last for this session.</p>
               <div id="career-events" class="career-events"></div>
             </section>
@@ -1048,7 +1073,10 @@
               <div id="circuit-lap-setting" class="circuit-lap-setting" hidden>
                 <label for="circuit-laps">LAP COUNT</label>
                 <select id="circuit-laps">
-                  <option value="3">3 LAPS</option>
+                  <option value="1">1 LAP</option>
+                  <option value="2">2 LAPS</option>
+                  <option value="3" selected>3 LAPS</option>
+                  <option value="4">4 LAPS</option>
                   <option value="5">5 LAPS</option>
                 </select>
               </div>
@@ -1059,36 +1087,30 @@
               <p class="flow-kicker">SHARED GARAGE · VEHICLE SELECTION</p>
               <h2>Choose Car</h2>
               <p id="garage-description" class="flow-description">Pick a car for the selected route.</p>
-              <div id="career-circuit-lap-setting" class="circuit-lap-setting" hidden>
-                <label for="career-circuit-laps">LAP COUNT</label>
-                <select id="career-circuit-laps">
-                  <option value="3">3 LAPS</option>
-                  <option value="5">5 LAPS</option>
-                </select>
+              <div class="garage-preview">
+                <canvas id="garage-preview-canvas" aria-label="Selected vehicle preview"></canvas>
+                <span id="garage-preview-name" class="garage-preview-name">Choose a car</span>
+                <span id="garage-preview-status" class="garage-preview-status" aria-live="polite"></span>
               </div>
-              <div id="garage-list" class="garage-list"></div>
-              <div class="flow-actions">
+              <div class="garage-carousel">
                 <button id="garage-back" class="flow-button secondary" type="button">BACK</button>
-                <button id="launch-game" class="flow-button" type="button" disabled>LOAD SESSION</button>
+                <div id="garage-list" class="garage-list"></div>
+                <button id="launch-game" class="flow-button" type="button" disabled>NEXT</button>
               </div>
             </section>
           </main>
           <aside class="flow-aside" aria-label="Route preview">
             <div>
               <div class="aside-art">
-                <span class="aside-tag">HOOD · ROUTE</span>
-                <svg viewBox="0 0 300 160" aria-hidden="true">
-                  <path class="track-path" d="M22 104 C44 104 42 46 76 46 H112 C143 46 137 118 170 118 H204 C234 118 225 65 256 65 H278"/>
-                  <path class="track-glow" d="M22 104 C44 104 42 46 76 46 H112 C143 46 137 118 170 118 H204 C234 118 225 65 256 65 H278"/>
-                  <circle cx="22" cy="104" r="5" fill="#ffb347"/><circle cx="278" cy="65" r="5" fill="#6fe6a1"/>
-                </svg>
+                <span class="aside-tag">SELECTED ROUTE</span>
+                <svg id="aside-route-map" class="route-map" viewBox="0 0 300 160" role="img" aria-label="Selected route map"></svg>
               </div>
               <p id="aside-caption" class="aside-caption">YOUR NEXT MILE</p>
               <h3 id="aside-title" class="aside-title">A city built to drive.</h3>
               <p id="aside-copy" class="aside-copy">Routes, vehicles and events connect as your HOOD career grows.</p>
             </div>
             <div class="aside-stats">
-              <div><strong>08</strong><small>NGARA CIRCUITS</small></div><div><strong id="career-garage-count">00</strong><small>GARAGE CARS</small></div><div><strong>01</strong><small>SPRINT READY</small></div>
+              <div><strong>10</strong><small>CLOSED CIRCUITS</small></div><div><strong id="career-garage-count">00</strong><small>GARAGE CARS</small></div><div><strong>03</strong><small>SPRINT ROUTES</small></div>
             </div>
           </aside>
         </div>
@@ -1131,7 +1153,7 @@
   </main>
 
   <script type="module">
-    import { createCareerStore } from './src/core/career.js';
+    import { CAREER_CIRCUIT_EVENTS, createCareerStore } from './src/core/career.js';
     import { CONFIG as GAME_CONFIG } from './src/config.js';
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -1167,13 +1189,17 @@
     ];
     const routesByMode = {
       circuit: [],
-      sprint: [careerRoutes[1]],
+      sprint: [],
       'free-drive': [careerRoutes[0], careerRoutes[2]]
     };
     let circuitRoutesPromise = null;
+    let sprintRoutesPromise = null;
+    let freeDriveRoutesPromise = null;
+    let selectedLaps = 3;
     const cars = Object.entries(GAME_CONFIG.cars).map(([id, car]) => ({
       id,
       name: car.name || id,
+      model: car.model,
       type: car.type || 'CUSTOM PROFILE',
       unlockAt: car.careerUnlockAt ?? 0,
       initials: car.initials || car.name?.slice(0, 3).toUpperCase() || 'CAR',
@@ -1189,6 +1215,7 @@
     let selectedRoute = null;
     let selectedCar = null;
     let returnPage = 'routes';
+    let careerStorageWarning = false;
     const mobileQuery = window.matchMedia('(max-width: 720px), (pointer: coarse)');
     const isMobile = () => mobileQuery.matches;
     const updateMobileLayout = () => document.body.classList.toggle('mobile-layout', isMobile());
@@ -1210,7 +1237,12 @@
       const headings = {
         profiles: ['CAREER MODE', 'DRIVER PROFILE'],
         'career-hub': ['CAREER MODE', 'EVENT MAP'],
-        routes: [selectedMode === 'sprint' ? 'SPRINT MODE' : 'CIRCUIT MODE', 'ROUTE SELECTION'],
+        routes: [
+          selectedMode === 'sprint' ? 'SPRINT MODE'
+            : selectedMode === 'free-drive' ? 'FREE DRIVE'
+              : 'CIRCUIT MODE',
+          'ROUTE SELECTION'
+        ],
         garage: ['SHARED GARAGE', 'VEHICLE SELECTION']
       };
       const labels = headings[page] || headings.profiles;
@@ -1260,11 +1292,13 @@
 
     function selectProfile(profileId) {
       selectedProfileId = profileId;
+      careerStorageWarning = false;
       try { localStorage.setItem('hood.activeProfile', profileId); } catch { /* Optional convenience only. */ }
-      continueCareer(profileId);
+      renderCareerHub();
+      setFlowPage('career-hub');
     }
 
-    async function continueCareer(profileId, showMapWhenComplete = true) {
+    async function continueCareer(profileId) {
       try {
         await loadCircuitRoutes();
       } catch (error) {
@@ -1280,17 +1314,8 @@
         openMode('career');
         return;
       }
-      const nextEvent = careerRoutes.find((route) =>
-        careerStore.isEventUnlocked(profile.id, route.id) &&
-        !profile.completedRouteIds.includes(route.id)
-      );
-      if (nextEvent) {
-        selectedRoute = nextEvent;
-        openGarage('career-hub');
-        return;
-      }
       renderCareerHub();
-      if (showMapWhenComplete) setFlowPage('career-hub');
+      setFlowPage('career-hub');
     }
 
     function renderCareerHub() {
@@ -1303,22 +1328,37 @@
       document.getElementById('career-heading').textContent = `${profile.name}'s career`;
       document.getElementById('career-profile-name').textContent = profile.name;
       document.getElementById('career-event-count').textContent = String(profile.eventsCompleted);
-      document.getElementById('career-storage-warning').hidden = true;
+      document.getElementById('career-storage-warning').hidden = !careerStorageWarning;
       document.getElementById('career-rank').textContent = profile.eventsCompleted >= 3
         ? 'HOOD LEGEND'
         : profile.eventsCompleted >= 1 ? 'RISING DRIVER' : 'ROOKIE DRIVER';
+      const unlockedEvents = careerRoutes.filter((route) =>
+        careerStore.isEventUnlocked(profile.id, route.eventId || route.id)
+      );
+      const unlockedCars = cars.filter((car) => careerStore.isCarUnlocked(profile.id, car.id));
+      document.getElementById('career-race-count').textContent = String(unlockedEvents.length);
+      document.getElementById('career-car-count').textContent = `${unlockedCars.length}/${cars.length}`;
+      const carList = document.getElementById('career-unlocked-cars');
+      carList.replaceChildren();
+      for (const car of unlockedCars) {
+        const chip = document.createElement('span');
+        chip.className = 'career-car-chip';
+        chip.textContent = car.name;
+        carList.append(chip);
+      }
       const list = document.getElementById('career-events');
       list.replaceChildren();
       careerRoutes.forEach((route, index) => {
-        const unlocked = careerStore.isEventUnlocked(profile.id, route.id);
-        const complete = profile.completedRouteIds.includes(route.id);
+        const eventId = route.eventId || route.id;
+        const unlocked = careerStore.isEventUnlocked(profile.id, eventId);
+        const complete = profile.completedRouteIds.includes(eventId);
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'career-event';
         button.disabled = !unlocked;
         const details = document.createElement('span');
         const title = document.createElement('strong');
-        title.textContent = `${String(index + 1).padStart(2, '0')} · ${route.name}`;
+        title.textContent = `${String(index + 1).padStart(2, '0')} · ${route.name}${route.laps ? ` · ${route.laps} LAPS` : ''}`;
         const subtitle = document.createElement('small');
         subtitle.textContent = route.detail;
         details.append(title, subtitle);
@@ -1329,6 +1369,7 @@
         if (unlocked) button.addEventListener('click', () => {
           selectedMode = 'career';
           selectedRoute = route;
+          selectedLaps = route.laps || 3;
           openGarage('career-hub');
         });
         list.append(button);
@@ -1355,6 +1396,7 @@
                 detail: route.blurb || 'Closed Ngara circuit',
                 circuit: true,
                 lengthM: route.lengthM,
+                pts: route.pts,
                 distance: Number.isFinite(route.lengthM)
                   ? route.lengthM >= 1000
                     ? `${(route.lengthM / 1000).toFixed(1)} KM`
@@ -1362,7 +1404,18 @@
                   : 'CIRCUIT'
               }));
             if (!routes.length) throw new Error('Route catalogue contains no circuit routes.');
-            careerRoutes.push(...routes);
+            const careerEvents = CAREER_CIRCUIT_EVENTS.map((event) => {
+              const route = routes.find((candidate) => candidate.id === event.routeId);
+              if (!route) throw new Error(`Career circuit route ${event.routeId} is missing.`);
+              return {
+                ...route,
+                eventId: event.id,
+                laps: event.laps,
+                name: route.name,
+                detail: `${route.detail} · ${event.laps}-lap career event`
+              };
+            });
+            careerRoutes.splice(3, careerRoutes.length - 3, ...careerEvents);
             return routes;
           })
           .catch((error) => {
@@ -1371,6 +1424,76 @@
           });
       }
       return circuitRoutesPromise;
+    }
+
+    function loadSprintRoutes() {
+      if (!sprintRoutesPromise) {
+        sprintRoutesPromise = fetch('./data/routes/all-routes.json')
+          .then((response) => {
+            if (!response.ok) throw new Error(`Route catalogue HTTP ${response.status}`);
+            return response.json();
+          })
+          .then((catalogue) => {
+            if (!Array.isArray(catalogue?.routes)) {
+              throw new Error('Route catalogue must contain a routes array.');
+            }
+            const routes = catalogue.routes
+              .filter((route) => Array.isArray(route?.checkpoints) && route.checkpoints.length)
+              .map((route) => ({
+                id: route.id,
+                name: route.name,
+                detail: route.blurb || 'Timed checkpoint sprint',
+                pts: route.pts,
+                distance: Number.isFinite(route.lengthM)
+                  ? `${(route.lengthM / 1000).toFixed(1)} KM`
+                  : 'SPRINT'
+              }));
+            if (!routes.length) throw new Error('Route catalogue contains no sprint routes.');
+            routesByMode.sprint = routes;
+            return routes;
+          })
+          .catch((error) => {
+            sprintRoutesPromise = null;
+            throw error;
+          });
+      }
+      return sprintRoutesPromise;
+    }
+
+    function loadFreeDriveRoutes() {
+      if (!freeDriveRoutesPromise) {
+        freeDriveRoutesPromise = fetch('./data/routes/all-routes.json')
+          .then((response) => {
+            if (!response.ok) throw new Error(`Route catalogue HTTP ${response.status}`);
+            return response.json();
+          })
+          .then((catalogue) => {
+            if (!Array.isArray(catalogue?.routes)) {
+              throw new Error('Route catalogue must contain a routes array.');
+            }
+            const routes = catalogue.routes
+              .filter((route) => route?.mode === 'free-drive')
+              .map((route) => ({
+                id: route.id,
+                name: route.name,
+                detail: route.blurb || 'Open road network',
+                pts: route.pts,
+                distance: Number.isFinite(route.lengthM)
+                  ? `${(route.lengthM / 1000).toFixed(1)} KM`
+                  : 'FREE DRIVE'
+              }));
+            routesByMode['free-drive'] = [
+              ...careerRoutes.filter((route) => !routes.some((item) => item.id === route.id)),
+              ...routes
+            ];
+            return routesByMode['free-drive'];
+          })
+          .catch((error) => {
+            freeDriveRoutesPromise = null;
+            throw error;
+          });
+      }
+      return freeDriveRoutesPromise;
     }
 
     async function openMode(mode) {
@@ -1385,11 +1508,11 @@
         mode === 'free-drive' ? 'Take the long way.' :
         mode === 'circuit' ? 'Own every lap.' : 'Earn every mile.';
       document.getElementById('aside-copy').textContent = mode === 'sprint'
-        ? 'A timed Ngara run with four checkpoints. Clear the route to record your result.'
+        ? 'Race two Mombasa city routes, hit every checkpoint, and own the clock.'
         : mode === 'free-drive'
-          ? 'Explore the available Nairobi roads without checkpoint pressure or a timer.'
+          ? 'Explore Mombasa Island and Nyali across a broad open road network, with no timer.'
           : mode === 'circuit'
-            ? 'Race the closed Ngara circuits for three or five timed laps.'
+            ? 'Race closed circuits in Nairobi and Mombasa for one to five timed laps.'
             : 'Your driver profile keeps event clears and unlocks saved on this device.';
       if (mode === 'career') {
         try {
@@ -1404,22 +1527,27 @@
         setFlowPage('profiles');
       } else {
         setFlowPage('routes');
-        if (mode === 'circuit') {
+        if (mode === 'circuit' || mode === 'sprint' || mode === 'free-drive') {
           const routeList = document.getElementById('route-list');
           routeList.replaceChildren();
           const status = document.createElement('p');
           status.className = 'flow-description';
-          status.textContent = 'Loading circuit routes…';
+          status.textContent = mode === 'circuit' ? 'Loading circuit routes…'
+            : mode === 'sprint' ? 'Loading sprint routes…' : 'Loading free-drive areas…';
           routeList.append(status);
           try {
-            routesByMode.circuit = await loadCircuitRoutes();
+            if (mode === 'circuit') routesByMode.circuit = await loadCircuitRoutes();
+            else if (mode === 'sprint') await loadSprintRoutes();
+            else await loadFreeDriveRoutes();
             if (selectedMode === mode) renderRoutes();
           } catch (error) {
-            console.error('[HOOD] Circuit routes could not be loaded:', error);
+            console.error(`[HOOD] ${mode} routes could not be loaded:`, error);
             if (selectedMode === mode) {
               routeList.replaceChildren();
+              const label = mode === 'circuit' ? 'Circuit' :
+                mode === 'sprint' ? 'Sprint' : 'Free-drive';
               document.getElementById('route-description').textContent =
-                'Circuit routes could not be loaded. Return to the menu and try again.';
+                `${label} routes could not be loaded. Return to the menu and try again.`;
             }
           }
         } else {
@@ -1428,10 +1556,55 @@
       }
     }
 
+    const svgNamespace = 'http://www.w3.org/2000/svg';
+    function renderRouteMap(svg, points) {
+      svg.replaceChildren();
+      if (!Array.isArray(points) || points.length < 4) return;
+      const coordinates = [];
+      for (let index = 0; index + 1 < points.length; index += 2) {
+        const x = Number(points[index]);
+        const y = Number(points[index + 1]);
+        if (Number.isFinite(x) && Number.isFinite(y)) coordinates.push([x, y]);
+      }
+      if (coordinates.length < 2) return;
+      const xs = coordinates.map(([x]) => x);
+      const ys = coordinates.map(([, y]) => y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      const scale = Math.min(264 / Math.max(maxX - minX, 1), 124 / Math.max(maxY - minY, 1));
+      const linePoints = coordinates.map(([x, y]) =>
+        `${(18 + (x - minX) * scale).toFixed(1)},${(142 - (y - minY) * scale).toFixed(1)}`
+      ).join(' ');
+      const base = document.createElementNS(svgNamespace, 'polyline');
+      base.setAttribute('points', linePoints);
+      svg.append(base);
+      const highlighted = base.cloneNode();
+      highlighted.setAttribute('class', 'route-map-line');
+      svg.append(highlighted);
+      const start = linePoints.split(' ')[0].split(',');
+      const finish = linePoints.split(' ').at(-1).split(',');
+      for (const [point, color] of [[start, '#ffb347'], [finish, '#6fe6a1']]) {
+        const marker = document.createElementNS(svgNamespace, 'circle');
+        marker.setAttribute('cx', point[0]);
+        marker.setAttribute('cy', point[1]);
+        marker.setAttribute('r', '4');
+        marker.setAttribute('fill', color);
+        svg.append(marker);
+      }
+    }
+
+    function updateAsideRoute(route) {
+      if (!route) return;
+      document.getElementById('aside-title').textContent = route.name;
+      document.getElementById('aside-copy').textContent = `${route.detail} · ${route.distance}.`;
+      renderRouteMap(document.getElementById('aside-route-map'), route.pts);
+    }
+
     function renderRoutes() {
       const list = document.getElementById('route-list');
       list.replaceChildren();
       document.getElementById('circuit-lap-setting').hidden = selectedMode !== 'circuit';
+      selectedLaps = Number(document.getElementById('circuit-laps').value);
       const routes = routesByMode[selectedMode] || [];
       document.getElementById('route-kicker').textContent = `${selectedMode.toUpperCase()} · ROUTE SELECTION`;
       document.getElementById('route-heading').textContent =
@@ -1439,45 +1612,58 @@
         selectedMode === 'sprint' ? 'Choose a sprint' :
         selectedMode === 'free-drive' ? 'Choose a starting point' : 'Pick your route';
       document.getElementById('route-description').textContent = selectedMode === 'circuit'
-        ? 'Race three or five laps.'
+        ? 'Choose a route and race from one to five laps.'
         : selectedMode === 'sprint'
-          ? 'Sprint events with checkpoint timing. More sprint routes are coming.'
+          ? 'Choose a sprint route. Follow the route preview and clear each checkpoint.'
         : selectedMode === 'free-drive'
-          ? 'Choose where to begin. The full Nairobi road network is open for you to explore.'
+          ? 'Choose an area. Mombasa Island and Nyali are open for you to explore.'
           : 'Choose any live road route for your circuit session.';
       for (const route of routes) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'route-card';
+        const map = document.createElementNS(svgNamespace, 'svg');
+        map.setAttribute('class', 'route-map');
+        map.setAttribute('viewBox', '0 0 300 160');
+        map.setAttribute('aria-hidden', 'true');
+        renderRouteMap(map, route.pts);
         const details = document.createElement('span');
+        details.className = 'route-card-copy';
+        const text = document.createElement('span');
         const name = document.createElement('strong');
         name.textContent = route.name;
         const subtitle = document.createElement('small');
         subtitle.textContent = route.detail;
-        details.append(name, subtitle);
+        text.append(name, subtitle);
+        details.append(text);
         const distance = document.createElement('span');
         distance.className = 'route-distance';
         distance.textContent = route.distance;
-        button.append(details, distance);
+        details.append(distance);
+        button.append(map, details);
         button.addEventListener('click', () => {
           selectedRoute = route;
+          selectedLaps = selectedMode === 'circuit'
+            ? Number(document.getElementById('circuit-laps').value)
+            : 3;
           openGarage('routes');
         });
         list.append(button);
       }
+      if (routes.length) updateAsideRoute(routes[0]);
     }
 
     function openGarage(fromPage) {
       returnPage = fromPage;
-      document.getElementById('career-circuit-lap-setting').hidden =
-        selectedMode !== 'career' || selectedRoute.circuit !== true;
-      renderGarage();
       setFlowPage('garage');
+      renderGarage();
+      requestAnimationFrame(resizeGaragePreview);
       document.getElementById('garage-description').textContent =
         `${selectedRoute.name} · ${selectedRoute.detail}. Choose a vehicle for this session.`;
       document.getElementById('aside-caption').textContent = 'GARAGE';
-      document.getElementById('aside-title').textContent = selectedRoute.name;
-      document.getElementById('aside-copy').textContent = `${selectedRoute.detail} · ${selectedRoute.distance}. Your selected vehicle will load into this route.`;
+      updateAsideRoute(selectedRoute);
+      document.getElementById('aside-copy').textContent =
+        `${selectedRoute.detail} · ${selectedRoute.distance}. Your selected vehicle will load into this route.`;
     }
 
     function renderGarage() {
@@ -1492,33 +1678,23 @@
         button.type = 'button';
         button.className = `garage-card${car.id === selectedCar ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
         button.disabled = !unlocked;
-        const chip = document.createElement('span');
-        chip.className = 'car-chip';
-        chip.textContent = unlocked ? car.initials : 'LOCKED';
-        if (car.bodyColor) {
-          chip.style.backgroundColor = car.bodyColor;
-          chip.style.color = '#fff';
-        }
-        const details = document.createElement('span');
         const name = document.createElement('strong');
         name.textContent = car.name;
-        const status = document.createElement('small');
-        status.textContent = unlocked
-          ? [car.type, ...car.displayStats].filter(Boolean).join(' · ')
-          : `CLEAR ${car.unlockAt} EVENT${car.unlockAt === 1 ? '' : 'S'} TO UNLOCK`;
-        if (car.bodyColor) button.style.setProperty('--car-color', car.bodyColor);
-        details.append(name, status);
-        button.append(chip, details);
+        button.setAttribute('aria-label', unlocked
+          ? `Select ${car.name}`
+          : `${car.name}, locked until event ${car.unlockAt}`);
+        button.append(name);
         if (unlocked) button.addEventListener('click', () => {
           selectedCar = car.id;
           renderGarage();
-          document.getElementById('launch-game').disabled = false;
         });
         list.append(button);
       }
+      const selected = cars.find((car) => car.id === selectedCar);
+      document.getElementById('garage-preview-name').textContent = selected?.name || 'No available car';
+      if (selected) updateGaragePreview(selected);
       document.getElementById('launch-game').disabled = !selectedCar;
-      document.getElementById('launch-game').textContent =
-        selectedMode === 'career' ? 'START CAREER' : 'LOAD';
+      document.getElementById('launch-game').textContent = 'NEXT';
     }
 
     function launchGame() {
@@ -1534,14 +1710,12 @@
         hoodFlow: '1'
       });
       if (circuit) {
-        const lapControl = selectedMode === 'career'
-          ? document.getElementById('career-circuit-laps')
-          : document.getElementById('circuit-laps');
-        params.set('laps', lapControl.value);
+        params.set('laps', String(selectedLaps));
       }
       if (selectedMode === 'career' && selectedProfileId) {
         params.set('career', '1');
         params.set('profile', selectedProfileId);
+        params.set('careerEvent', selectedRoute.eventId || selectedRoute.id);
       }
       document.getElementById('loading-detail').textContent =
         `${selectedRoute.name} · ${cars.find((car) => car.id === selectedCar)?.name || 'Vehicle'} · Preparing world data.`;
@@ -1588,7 +1762,7 @@
         return;
       }
       selectedProfileId = result.profile.id;
-      document.getElementById('career-storage-warning').hidden = result.persisted;
+      careerStorageWarning = !result.persisted;
       try { localStorage.setItem('hood.activeProfile', selectedProfileId); } catch { /* Optional convenience only. */ }
       field.value = '';
       document.getElementById('create-profile-form').hidden = true;
@@ -1767,6 +1941,108 @@
       b.getSize(s);
       return { b, s };
     };
+    let garagePreviewRenderer = null;
+    let garagePreviewScene = null;
+    let garagePreviewCamera = null;
+    let garagePreviewRoot = null;
+    let garagePreviewToken = 0;
+
+    function resizeGaragePreview() {
+      if (!garagePreviewRenderer) return;
+      const canvas = garagePreviewRenderer.domElement;
+      const width = Math.max(1, canvas.clientWidth);
+      const height = Math.max(1, canvas.clientHeight);
+      garagePreviewRenderer.setSize(width, height, false);
+      garagePreviewCamera.aspect = width / height;
+      garagePreviewCamera.updateProjectionMatrix();
+      garagePreviewRenderer.render(garagePreviewScene, garagePreviewCamera);
+    }
+
+    function updateGaragePreview(car) {
+      const status = document.getElementById('garage-preview-status');
+      const token = ++garagePreviewToken;
+      try {
+        if (!garagePreviewRenderer) {
+          const canvas = document.getElementById('garage-preview-canvas');
+          garagePreviewRenderer = new THREE.WebGLRenderer({
+            canvas,
+            alpha: true,
+            antialias: true,
+            powerPreference: 'low-power'
+          });
+          garagePreviewRenderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+          garagePreviewRenderer.setClearColor(0x000000, 0);
+          garagePreviewScene = new THREE.Scene();
+          garagePreviewCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+          garagePreviewCamera.position.set(5.5, 3.2, 6.8);
+          garagePreviewCamera.lookAt(0, 0.7, 0);
+          garagePreviewScene.add(new THREE.HemisphereLight(0xffe7cc, 0x18202a, 2));
+          const keyLight = new THREE.DirectionalLight(0xffffff, 3);
+          keyLight.position.set(-4, 8, 6);
+          garagePreviewScene.add(keyLight);
+          const rimLight = new THREE.DirectionalLight(0xffa347, 1.6);
+          rimLight.position.set(5, 3, -5);
+          garagePreviewScene.add(rimLight);
+          window.addEventListener('resize', resizeGaragePreview);
+        }
+      } catch (error) {
+        console.error('[HOOD] Vehicle preview could not be initialized:', error);
+        status.textContent = 'PREVIEW UNAVAILABLE';
+        return;
+      }
+
+      status.textContent = 'LOADING VEHICLE';
+      if (garagePreviewRoot) {
+        garagePreviewScene.remove(garagePreviewRoot);
+        garagePreviewRoot = null;
+      }
+      loader.load(
+        car.model,
+        (gltf) => {
+          if (token !== garagePreviewToken) return;
+          const model = gltf.scene;
+          const { b, s } = sizeOf(model);
+          const longest = Math.max(s.x, s.y, s.z);
+          if (!Number.isFinite(longest) || longest <= 0) {
+            status.textContent = 'PREVIEW UNAVAILABLE';
+            console.error(`[HOOD] Vehicle model ${car.model} has no measurable geometry.`);
+            return;
+          }
+          model.scale.multiplyScalar(4.4 / longest);
+          const bounds = sizeOf(model).b;
+          model.position.x -= (bounds.min.x + bounds.max.x) / 2;
+          model.position.y -= bounds.min.y;
+          model.position.z -= (bounds.min.z + bounds.max.z) / 2;
+          model.rotation.y = Math.PI;
+          if (car.bodyColor && Array.isArray(GAME_CONFIG.cars[car.id].paintMaterials)) {
+            const paintNames = new Set(GAME_CONFIG.cars[car.id].paintMaterials);
+            model.traverse((object) => {
+              if (!object.isMesh) return;
+              const paint = (material) => {
+                if (!paintNames.has(material.name)) return material;
+                const variant = material.clone();
+                variant.color.set(car.bodyColor);
+                variant.needsUpdate = true;
+                return variant;
+              };
+              object.material = Array.isArray(object.material)
+                ? object.material.map(paint)
+                : paint(object.material);
+            });
+          }
+          garagePreviewRoot = model;
+          garagePreviewScene.add(model);
+          status.textContent = 'VEHICLE PREVIEW';
+          resizeGaragePreview();
+        },
+        undefined,
+        (error) => {
+          if (token !== garagePreviewToken) return;
+          console.error(`[HOOD] Vehicle preview could not load ${car.model}:`, error);
+          status.textContent = 'PREVIEW UNAVAILABLE';
+        }
+      );
+    }
 
     function prepareModel(model, animations) {
       const o = sizeOf(model), longest = Math.max(o.s.x, o.s.y, o.s.z);

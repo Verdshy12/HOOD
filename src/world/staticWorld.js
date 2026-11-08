@@ -36,8 +36,9 @@ function insidePolygon(px, pz, pts) {                               // ray casti
 export const SURFACE = { asphalt: { mu: 1.0, roll: 0.015, onRoad: true }, grass: { mu: 0.55, roll: 0.08, onRoad: false } };
 
 export class StaticWorld {
-  constructor(tile) {
+  constructor(tile, barricades = []) {
     this.tile = tile; this.roadSegs = []; this.bSegs = []; this.roadGrid = new SegmentGrid(); this.bGrid = new SegmentGrid();
+    this.barricades = barricades;
     for (const r of tile.roads) for (let i = 0; i + 3 < r.pts.length; i += 2) {
       const id = this.roadSegs.push([r.pts[i], r.pts[i + 1], r.pts[i + 2], r.pts[i + 3], r.w / 2 + 0.6]) - 1;     // +0.6 m shoulder
       this.roadGrid.insert(id, r.pts[i], r.pts[i + 1], r.pts[i + 2], r.pts[i + 3], r.w / 2 + 0.6);
@@ -63,6 +64,40 @@ export class StaticWorld {
       if (bStamp[bi] !== bTick) { bStamp[bi] = bTick;                    // centre inside footprint (e.g. spawned/teleported into it)
         if (insidePolygon(x, z, this.tile.buildings[bi].pts)) { const dd = d; const nx = dd > 1e-6 ? (p.x - x) / dd : 0, nz = dd > 1e-6 ? (p.z - z) / dd : 1; best = { nx, nz, depth: r + dd }; } }
     });
+    for (const barrier of this.barricades) {
+      const dx = x - barrier.x, dz = z - barrier.z;
+      const cos = Math.cos(barrier.roadHeading), sin = Math.sin(barrier.roadHeading);
+      const localX = dx * cos + dz * sin;
+      const localZ = -dx * sin + dz * cos;
+      const nearestX = Math.max(-barrier.width / 2, Math.min(localX, barrier.width / 2));
+      const nearestZ = Math.max(-0.2, Math.min(localZ, 0.2));
+      const pushX = localX - nearestX, pushZ = localZ - nearestZ;
+      const distance = Math.hypot(pushX, pushZ);
+      if (distance >= r) continue;
+
+      let normalX, normalZ, depth;
+      if (distance > 1e-6) {
+        normalX = pushX / distance;
+        normalZ = pushZ / distance;
+        depth = r - distance;
+      } else {
+        const overlapX = barrier.width / 2 - Math.abs(localX);
+        const overlapZ = 0.2 - Math.abs(localZ);
+        if (overlapX < overlapZ) {
+          normalX = Math.sign(localX) || 1;
+          normalZ = 0;
+          depth = r + overlapX;
+        } else {
+          normalX = 0;
+          normalZ = Math.sign(localZ) || 1;
+          depth = r + overlapZ;
+        }
+      }
+
+      const nx = normalX * cos - normalZ * sin;
+      const nz = normalX * sin + normalZ * cos;
+      if (!best || depth > best.depth) best = { nx, nz, depth };
+    }
     return best;
   }
 }
