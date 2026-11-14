@@ -67,13 +67,17 @@ function addPoliceCar(parent) {
 }
 
 /** Place marked police cars and full-width road gates at route-defined closed junctions. */
-export function buildRouteBarricades(route) {
+export function buildRouteBarricades(route, { cell } = {}) {
   if (!route.barricades?.length) return null;
 
   const barricades = new THREE.Group();
 
   for (const definition of route.barricades) {
     const { x, z, roadHeading, width } = definition;
+    if (cell && (
+      Math.floor(x / 128) !== cell[0] ||
+      Math.floor(z / 128) !== cell[1]
+    )) continue;
     const gate = new THREE.Group();
     gate.position.set(x, 0, z);
     gate.rotation.y = -roadHeading;
@@ -108,7 +112,7 @@ export function buildRouteBarricades(route) {
     barricades.add(gate);
   }
 
-  return barricades;
+  return barricades.children.length ? barricades : null;
 }
 
 /** Roads: one quad per segment + a small disc at each joint (fills bend gaps, can never fold over like a mitered ribbon).
@@ -402,7 +406,7 @@ export function buildBuildingMesh(buildings) {
 }
 
 /** Painted centre-line dashes along a route. One merged mesh = 1 draw call. */
-export function buildRouteMarkings(route) {
+export function buildRouteMarkings(route, { cell } = {}) {
   const pos = [], col = [], idx = []; const P = route.path.pts, y = 0.055, hw = 0.075, DASH = 3.5, GAP = 5.5;
   const quad = (ax, az, bx, bz, w, yy, c) => {
     const l = Math.hypot(bx - ax, bz - az); if (l < 0.01) return;
@@ -414,9 +418,14 @@ export function buildRouteMarkings(route) {
   for (let i = 0; i < P.length - 1; i++) {                                   // dashes follow the resampled route (2 m steps)
     const a = P[i], b = P[i + 1];
     if (s >= DASH + GAP) s -= DASH + GAP;
-    if (s < DASH) quad(a.x, a.z, b.x, b.z, hw, y, paint);
+    const midpointX = (a.x + b.x) / 2;
+    const midpointZ = (a.z + b.z) / 2;
+    const inCell = !cell ||
+      (Math.floor(midpointX / 128) === cell[0] && Math.floor(midpointZ / 128) === cell[1]);
+    if (inCell && s < DASH) quad(a.x, a.z, b.x, b.z, hw, y, paint);
     s += route.path.step;
   }
+  if (!idx.length) return null;
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.setIndex(idx); g.computeVertexNormals();

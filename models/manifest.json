@@ -11,6 +11,11 @@
       "model": "./models/dodge.glb"
     },
     {
+      "id": "gtr-35",
+      "name": "GTR+35",
+      "model": "./models/GTR%2B35.glb"
+    },
+    {
       "id": "nissan-skyline-r34-gt-r",
       "name": "Nissan Skyline R34 Gt R",
       "model": "./models/nissan_skyline_r34_gt-r.glb"

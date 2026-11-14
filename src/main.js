@@ -15,7 +15,7 @@ import {
 import { resolveVehiclePhysics }from './physics/vehicleProfiles.js';
 import { rigCar } from './car/carRig.js';
 import { StaticWorld, collideCar } from './world/staticWorld.js';
-import { buildRoadMesh, buildBuildingMesh, buildRouteMarkings, buildRouteBarricades } from './world/meshes.js';
+import { WorldVisualChunks, WorldVisualStream, WORLD_CHUNK_SIZE } from './world/visualChunks.js';
 import { buildRoute, sampleAt, trackProgress } from './world/routes.js';
 import { preloadMusic } from '../music/preload.js';
 import { rigSteeringWheel, flashMesh, scanNearby, previewSplit } from './car/steeringWheel.js';
@@ -64,7 +64,7 @@ const text = (() => {
   };
 })();
 
-function drawSpeedometerScale() {
+function drawTachometerScale() {
   const namespace = 'http://www.w3.org/2000/svg';
   const centerX = 130;
   const centerY = 130;
@@ -88,34 +88,26 @@ function drawSpeedometerScale() {
     parent.append(label);
   };
 
-  const kphTicks = $('speedometer-kph-ticks');
-  const kphLabels = $('speedometer-kph-labels');
-  const mphTicks = $('speedometer-mph-ticks');
-  const mphLabels = $('speedometer-mph-labels');
-  if (!kphTicks || !kphLabels || !mphTicks || !mphLabels) return;
+  const ticks = $('tachometer-ticks');
+  const labels = $('tachometer-labels');
+  if (!ticks || !labels) return;
 
-  for (let kph = 0; kph <= 220; kph += 5) {
-    const major = kph % 20 === 0;
-    const medium = kph % 10 === 0;
+  for (let rpm = 0; rpm <= 8000; rpm += 250) {
+    const major = rpm % 1000 === 0;
+    const medium = rpm % 500 === 0;
     createMark(
-      kphTicks,
-      kph,
-      220,
+      ticks,
+      rpm,
+      8000,
       major ? 99 : medium ? 104 : 108,
       116,
-      major ? 'major' : medium ? 'medium' : 'minor'
+      `${major ? 'major' : medium ? 'medium' : 'minor'}${rpm >= 6500 ? ' redline' : ''}`
     );
-    if (major) createLabel(kphLabels, kph, 220, 88);
-  }
-
-  for (let mph = 0; mph <= 140; mph += 5) {
-    const major = mph % 10 === 0;
-    createMark(mphTicks, mph, 140, major ? 73 : 76, 80, major ? 'major' : 'minor');
-    if (major) createLabel(mphLabels, mph, 140, 62);
+    if (major && rpm % 2000 === 0) createLabel(labels, rpm / 1000, 8000, 88);
   }
 }
 
-drawSpeedometerScale();
+drawTachometerScale();
 
 const debug = new URLSearchParams(location.search).has('debug');
 const mobileLayoutQuery = matchMedia('(max-width: 700px), (pointer: coarse)');
@@ -568,6 +560,7 @@ skyFill.position.set(35, 18, -40);
 scene.add(skyFill);
 
 // HOOD terrain grass: repeating grass-medium surface.
+const GROUND_SIZE = 768;
 const groundTexture = new THREE.TextureLoader().load(
   './assets/Terrain/grass_medium/textures/grass_medium_01_diff_4k.jpg',
   () => console.info('[HOOD] Terrain grass texture loaded.'),
@@ -578,11 +571,11 @@ const groundTexture = new THREE.TextureLoader().load(
 groundTexture.wrapS = THREE.RepeatWrapping;
 groundTexture.wrapT = THREE.RepeatWrapping;
 groundTexture.colorSpace = THREE.SRGBColorSpace;
-groundTexture.repeat.set(6000 / 12, 6000 / 12);
+groundTexture.repeat.set(GROUND_SIZE / 12, GROUND_SIZE / 12);
 groundTexture.anisotropy = 4;
 
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(6000, 6000),
+  new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE),
   new THREE.MeshStandardMaterial({
     map: groundTexture,
     color: 0xffffff,
@@ -594,6 +587,11 @@ ground.name = 'HOOD_GrassTerrain';
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.02;
 scene.add(ground);
+
+function centerGroundOn(x, z) {
+  ground.position.x = Math.floor(x / WORLD_CHUNK_SIZE) * WORLD_CHUNK_SIZE + WORLD_CHUNK_SIZE / 2;
+  ground.position.z = Math.floor(z / WORLD_CHUNK_SIZE) * WORLD_CHUNK_SIZE + WORLD_CHUNK_SIZE / 2;
+}
 
 const gameViewport = () => ({
   width: $('game')?.clientWidth || innerWidth,
@@ -612,6 +610,7 @@ if ($('game')) new ResizeObserver(syncCamera).observe($('game'));
 addEventListener('orientationchange', () => setTimeout(syncCamera, 250));
 
 let resultsPreviewFrame = 0;
+let worldVisualStream = null;
 function startResultsPreview() {
   const points = game.route?.path?.pts;
   if (!points?.length) return;
@@ -625,6 +624,8 @@ function startResultsPreview() {
   }), { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerZ = (bounds.minZ + bounds.maxZ) / 2;
+  worldVisualStream?.update(centerX, centerZ);
+  centerGroundOn(centerX, centerZ);
   const radius = Math.max(
     70,
     Math.hypot(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ) / 2
@@ -917,6 +918,7 @@ async function loadRoute(routeId, opts = {}) {
 
   game.routeLoading = true;
   const added = [];
+  let routeWorldStream = null;
 
   const progress = async (p, label) => {
     emit('hood:route-progress', { routeId, p, label });
@@ -979,19 +981,19 @@ async function loadRoute(routeId, opts = {}) {
       profileId
     };
     const isOpenFreeDrive = mode === 'free-drive' && !profileId;
-    const navigationMapEnabled = !mobileLayoutQuery.matches;
+    const navigationMapEnabled = !!$('navigationMapCanvas');
     const navigationMap = $('navigationMap');
     if (navigationMap) {
       navigationMap.hidden = !navigationMapEnabled;
       navigationMap.setAttribute(
         'aria-label',
         isOpenFreeDrive
-          ? `${route.city || 'Nairobi'} road network map showing your position and direction`
-          : 'Route map showing your position and direction'
+          ? `Nearby ${route.city || 'Nairobi'} roads, centered on your car and rotating with your heading`
+          : 'Nearby route map, centered on your car and rotating with your heading'
       );
     }
     const navigationMapLabel = $('navigationMapLabel');
-    if (navigationMapLabel) navigationMapLabel.textContent = isOpenFreeDrive ? 'ROAD NETWORK' : 'ROUTE MAP';
+    if (navigationMapLabel) navigationMapLabel.textContent = isOpenFreeDrive ? 'NEARBY ROADS' : 'ROUTE RADAR';
     document.body.classList.toggle('navigation-map-active', navigationMapEnabled);
     const routeName = $('routeName');
     if (routeName) routeName.textContent = isOpenFreeDrive
@@ -1036,33 +1038,27 @@ async function loadRoute(routeId, opts = {}) {
 
     await progress(0.32, 'Laying the tarmac');
     const asphaltTexture = await new THREE.TextureLoader().loadAsync('./assets/Terrain/asphalt_track/textures/asphalt_track_diff_4k.jpg');
-  const murramTexture = await new THREE.TextureLoader().loadAsync('./assets/Terrain/grass_ground/textures/grass_ground_diff_4k.jpg');
+    const murramTexture = await new THREE.TextureLoader().loadAsync('./assets/Terrain/grass_ground/textures/grass_ground_diff_4k.jpg');
 
-  for (const texture of [asphaltTexture, murramTexture]) {
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
-    texture.needsUpdate = true;
-  }
-
-  const roadMeshes = [
-    buildRoadMesh(tile.roads, { route: isOpenFreeDrive ? null : route, asphaltTexture, murramTexture }),
-    ...(isOpenFreeDrive ? [] : [buildRouteMarkings(route)])
-  ];
-    added.push(...roadMeshes);
-    scene.add(...roadMeshes);
-
-    await progress(0.45, 'Raising the buildings');
-    const buildingMesh = buildBuildingMesh(tile.buildings);
-    added.push(buildingMesh);
-    scene.add(buildingMesh);
-
-    if (routeBarricades.length) {
-      const barricadeMesh = buildRouteBarricades(route);
-      added.push(barricadeMesh);
-      scene.add(barricadeMesh);
+    for (const texture of [asphaltTexture, murramTexture]) {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+      texture.needsUpdate = true;
     }
+
+    routeWorldStream = new WorldVisualStream(
+      scene,
+      new WorldVisualChunks(tile, {
+        route: isOpenFreeDrive ? null : route,
+        barricades: routeBarricades
+      }),
+      { route: isOpenFreeDrive ? null : route, asphaltTexture, murramTexture }
+    );
+    worldVisualStream = routeWorldStream;
+    centerGroundOn(route.spawn.x, route.spawn.z);
+    routeWorldStream.update(route.spawn.x, route.spawn.z);
 
     await progress(0.65, 'Parking the car');
     let carGltf = engine.gltf;
@@ -1151,21 +1147,13 @@ async function loadRoute(routeId, opts = {}) {
     const endName = (route.landmarks?.find((l) => l.at === 'end') || {}).name || 'the end of the route';
     const mapCanvas = $('navigationMapCanvas');
     const mapContext = navigationMapEnabled ? mapCanvas?.getContext('2d') : null;
-    const mapPaths = isOpenFreeDrive
-      ? tile.roads
-        .filter((road) => Array.isArray(road.pts) && road.pts.length >= 4)
-        .map((road) => Array.from({ length: road.pts.length / 2 }, (_, index) => ({
-          x: road.pts[index * 2],
-          z: road.pts[index * 2 + 1]
-        })))
-      : [route.path.pts];
-    const mapPoints = mapPaths.flat();
-    const mapBounds = mapPoints.reduce((bounds, point) => ({
-      minX: Math.min(bounds.minX, point.x),
-      maxX: Math.max(bounds.maxX, point.x),
-      minZ: Math.min(bounds.minZ, point.z),
-      maxZ: Math.max(bounds.maxZ, point.z)
-    }), { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
+    const mapPaths = tile.roads
+      .filter((road) => Array.isArray(road.pts) && road.pts.length >= 4)
+      .map((road) => Array.from({ length: road.pts.length / 2 }, (_, index) => ({
+        x: road.pts[index * 2],
+        z: road.pts[index * 2 + 1]
+      })));
+    const routeMapPath = isOpenFreeDrive ? null : route.path.pts;
     const renderNavigationMap = (vehicle) => {
       if (!navigationMapEnabled || !mapContext || !mapCanvas) return;
       const rect = mapCanvas.getBoundingClientRect();
@@ -1179,19 +1167,28 @@ async function loadRoute(routeId, opts = {}) {
       }
       mapContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       mapContext.clearRect(0, 0, rect.width, rect.height);
-      const padding = 13;
-      const spanX = Math.max(1, mapBounds.maxX - mapBounds.minX);
-      const spanZ = Math.max(1, mapBounds.maxZ - mapBounds.minZ);
-      const scale = Math.min(
-        (rect.width - padding * 2) / spanX,
-        (rect.height - padding * 2) / spanZ
-      );
-      const offsetX = (rect.width - spanX * scale) / 2;
-      const offsetY = (rect.height - spanZ * scale) / 2;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const radius = isOpenFreeDrive ? 56 : 72;
+      const scale = Math.min(rect.width, rect.height) / (radius * 2);
+      const cos = Math.cos(vehicle.psi);
+      const sin = Math.sin(vehicle.psi);
       const screenPoint = (x, z) => ({
-        x: offsetX + (x - mapBounds.minX) * scale,
-        y: offsetY + (z - mapBounds.minZ) * scale
+        x: centerX + ((x - vehicle.x) * cos + (z - vehicle.z) * sin) * scale,
+        y: centerY + (-(x - vehicle.x) * sin + (z - vehicle.z) * cos) * scale
       });
+
+      mapContext.save();
+      mapContext.beginPath();
+      mapContext.arc(centerX, centerY, Math.min(rect.width, rect.height) / 2, 0, Math.PI * 2);
+      mapContext.clip();
+      mapContext.strokeStyle = 'rgba(95, 205, 244, .12)';
+      mapContext.lineWidth = 1;
+      for (const fraction of [0.34, 0.67, 1]) {
+        mapContext.beginPath();
+        mapContext.arc(centerX, centerY, Math.min(rect.width, rect.height) * fraction / 2, 0, Math.PI * 2);
+        mapContext.stroke();
+      }
 
       mapContext.beginPath();
       for (const path of mapPaths) {
@@ -1201,22 +1198,32 @@ async function loadRoute(routeId, opts = {}) {
           else mapContext.lineTo(mapped.x, mapped.y);
         });
       }
-      mapContext.strokeStyle = isOpenFreeDrive
-        ? 'rgba(95, 205, 244, .62)'
-        : 'rgba(95, 205, 244, .88)';
-      mapContext.lineWidth = isOpenFreeDrive ? 1.5 : 3;
+      mapContext.strokeStyle = 'rgba(2, 9, 14, .8)';
+      mapContext.lineWidth = 4;
       mapContext.lineJoin = 'round';
       mapContext.lineCap = 'round';
       mapContext.stroke();
+      mapContext.strokeStyle = 'rgba(155, 201, 216, .48)';
+      mapContext.lineWidth = 1.5;
+      mapContext.stroke();
 
-      if (!isOpenFreeDrive) {
-        const start = screenPoint(mapPoints[0].x, mapPoints[0].z);
-        const end = screenPoint(mapPoints.at(-1).x, mapPoints.at(-1).z);
+      if (routeMapPath?.length) {
+        mapContext.beginPath();
+        routeMapPath.forEach((point, index) => {
+          const mapped = screenPoint(point.x, point.z);
+          if (index === 0) mapContext.moveTo(mapped.x, mapped.y);
+          else mapContext.lineTo(mapped.x, mapped.y);
+        });
+        mapContext.strokeStyle = 'rgba(32, 200, 255, .9)';
+        mapContext.lineWidth = 2.5;
+        mapContext.stroke();
+        const start = screenPoint(routeMapPath[0].x, routeMapPath[0].z);
         mapContext.fillStyle = '#6fe6a1';
         mapContext.beginPath();
         mapContext.arc(start.x, start.y, 3.5, 0, Math.PI * 2);
         mapContext.fill();
         if (route.circuit !== true) {
+          const end = screenPoint(routeMapPath.at(-1).x, routeMapPath.at(-1).z);
           mapContext.fillStyle = '#ff735f';
           mapContext.beginPath();
           mapContext.arc(end.x, end.y, 3.5, 0, Math.PI * 2);
@@ -1224,14 +1231,11 @@ async function loadRoute(routeId, opts = {}) {
         }
       }
 
-      const player = screenPoint(vehicle.x, vehicle.z);
-      mapContext.save();
-      mapContext.translate(player.x, player.y);
-      mapContext.rotate(vehicle.psi);
       mapContext.beginPath();
-      mapContext.moveTo(0, -8);
-      mapContext.lineTo(-5, 6);
-      mapContext.lineTo(5, 6);
+      mapContext.moveTo(centerX, centerY - 7);
+      mapContext.lineTo(centerX - 5, centerY + 6);
+      mapContext.lineTo(centerX, centerY + 3);
+      mapContext.lineTo(centerX + 5, centerY + 6);
       mapContext.closePath();
       mapContext.fillStyle = '#fff';
       mapContext.shadowColor = '#20c8ff';
@@ -1485,17 +1489,19 @@ async function loadRoute(routeId, opts = {}) {
 
       camera.updateProjectionMatrix();
 
+      routeWorldStream.update(s.x, s.z);
+      centerGroundOn(s.x, s.z);
       const speedKph = Math.round(s.speed * 3.6);
-      text('speed', String(speedKph).padStart(3, '0'));
-      const speedometer = $('speedometer-needle')?.closest('.speedometer');
-      if (speedometer) {
-        const gaugeSpeed = THREE.MathUtils.clamp(speedKph, 0, 220);
-        const gaugeAngle = -135 + gaugeSpeed / 220 * 270;
-        speedometer.setAttribute(
+      text('engineRpm', String(Math.round(s.rpm)));
+      const tachometer = $('tachometer-needle')?.closest('.tachometer');
+      if (tachometer) {
+        const gaugeRpm = THREE.MathUtils.clamp(s.rpm, 0, 8000);
+        const gaugeAngle = -135 + gaugeRpm / 8000 * 270;
+        tachometer.setAttribute(
           'aria-label',
-          `Speedometer: ${speedKph} kilometers per hour${speedKph > 220 ? ', beyond dial range' : ''}${s.reverse ? ', reversing' : ''}`
+          `Tachometer: ${Math.round(s.rpm)} RPM`
         );
-        $('speedometer-needle').setAttribute('transform', `rotate(${gaugeAngle} 130 130)`);
+        $('tachometer-needle').setAttribute('transform', `rotate(${gaugeAngle} 130 130)`);
       }
       text('dashboardSpeed', `${speedKph} KM/H`);
       text('dashboardRpm', `${Math.round(s.rpm)} RPM`);
@@ -1584,6 +1590,8 @@ async function loadRoute(routeId, opts = {}) {
 
     beginSession();
   } catch (e) {
+    routeWorldStream?.dispose();
+    if (worldVisualStream === routeWorldStream) worldVisualStream = null;
     for (const o of added) o.parent?.remove(o);
     loop?.stop?.();
     loop = null;

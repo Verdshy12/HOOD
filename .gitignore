@@ -18,3 +18,11 @@ Thumbs.db
 
 # Large source archives
 assets/Terrain/grass_ground_4k.blend.zip
+
+# Rust build output
+**/target/
+/README.md
+/promo.php
+/Files/Media/music/rhumba_mix.mp3
+/data/routes/all-routes.json.backup
+/src/main.js.backup-20261101-074958

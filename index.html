@@ -29,8 +29,8 @@
   <meta name="apple-mobile-web-app-title" content="HOOD">
   <title>HOOD v1.0.1</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="music/radio.css?v=1.0.1">
-  <link rel="stylesheet" href="style.css?v=1.0.1">
+  <link rel="stylesheet" href="music/radio.css?v=1.0.4">
+  <link rel="stylesheet" href="style.css?v=1.0.4">
 
   <script type="importmap">
   {
@@ -67,7 +67,12 @@
         <p class="boot-label">HOOD · WORLD BUILD</p>
         <h2>SETTING<br><span>THE GRID.</span></h2>
         <p id="boot-detail">INITIALIZING YOUR SESSION</p>
-        <div class="boot-meter"><i id="boot-meter-fill"></i></div>
+        <div class="boot-meter-row">
+          <div class="boot-meter" role="progressbar" aria-label="HOOD loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <i id="boot-meter-fill"></i>
+          </div>
+          <output id="boot-percent" aria-hidden="true">0%</output>
+        </div>
         <div class="boot-steps"><span>ROUTE</span><span>WORLD</span><span>VEHICLE</span><span>START</span></div>
       </div>
       <div class="boot-map">
@@ -249,8 +254,8 @@
   </div>
 
   <div class="hud speed">
-    <div class="speedometer" role="img" aria-label="Speedometer: 0 kilometers per hour">
-      <svg id="speedometer-dial" viewBox="0 0 260 260" aria-hidden="true">
+    <div class="tachometer" role="img" aria-label="Tachometer: 850 RPM">
+      <svg id="tachometer-dial" viewBox="0 0 260 260" aria-hidden="true">
         <defs>
           <radialGradient id="dial-face" cx="50%" cy="42%" r="62%">
             <stop offset="0" stop-color="#1b2328"/>
@@ -271,23 +276,26 @@
         <circle class="dial-bezel" cx="130" cy="130" r="127"/>
         <circle class="dial-face" cx="130" cy="130" r="121"/>
         <circle class="dial-inner-ring" cx="130" cy="130" r="108"/>
-        <g id="speedometer-kph-ticks" class="speedometer-ticks kph-ticks"></g>
-        <g id="speedometer-mph-ticks" class="speedometer-ticks mph-ticks"></g>
-        <g id="speedometer-kph-labels" class="speedometer-labels kph-labels"></g>
-        <g id="speedometer-mph-labels" class="speedometer-labels mph-labels"></g>
-        <text class="dial-unit" x="130" y="91">KM/H</text>
-        <text class="dial-secondary-unit" x="130" y="190">MPH</text>
-        <g id="speedometer-needle" class="speedometer-needle" transform="rotate(-135 130 130)">
+        <g id="tachometer-ticks" class="speedometer-ticks"></g>
+        <g id="tachometer-labels" class="tachometer-labels"></g>
+        <text class="dial-unit" x="130" y="91">×1000 RPM</text>
+        <g id="tachometer-needle" class="speedometer-needle" transform="rotate(-135 130 130)">
           <path class="needle-tail" d="M126 134 128 148 132 148 134 134Z"/>
           <path class="needle-shaft" d="M127 133 129 47 130 36 131 47 133 133Z"/>
         </g>
         <circle class="needle-hub-outer" cx="130" cy="130" r="9"/>
         <circle class="needle-hub-inner" cx="130" cy="130" r="4"/>
         <rect class="speed-lcd" x="77" y="207" width="106" height="31" rx="4"/>
-        <text id="speed" class="speed-lcd-value" x="127" y="229">000</text>
-        <text class="speed-lcd-unit" x="132" y="228">KM/H</text>
+        <text id="engineRpm" class="speed-lcd-value" x="127" y="229">0850</text>
+        <text class="speed-lcd-unit" x="132" y="228">RPM</text>
         <text id="gear" class="gear-lcd" x="169" y="228">N</text>
       </svg>
+    </div>
+    <div class="boost-panel">
+      <div class="boost-heading">
+        <span>NITRO</span><span id="boostPercent">100%</span>
+      </div>
+      <div class="boost-track"><div id="boostFill"></div></div>
     </div>
   </div>
 
@@ -324,13 +332,6 @@
       <button id="brakeBtn" class="mobile-control mobile-brake" type="button" aria-label="Brake"><span>▼</span><small>BRAKE</small></button>
       <button id="throttleBtn" class="mobile-control mobile-throttle" type="button" aria-label="Accelerate"><span>▲</span><small>GAS</small></button>
     </div>
-  </div>
-
-  <div class="boost-panel">
-    <div class="boost-heading">
-      <span>NITRO</span><span id="boostPercent">100%</span>
-    </div>
-    <div class="boost-track"><div id="boostFill"></div></div>
   </div>
 
   <!-- HOOD Radio mounts here -->
@@ -381,10 +382,25 @@
       if (bootSelection) bootSelection.textContent = `${bootMode} · ${bootRoute} · ${bootCar}`;
 
       function updateBootProgress(detail = {}) {
+        loading.classList.remove("is-error");
         const fill = document.getElementById("boot-meter-fill");
+        const meter = document.querySelector(".boot-meter");
+        const percent = document.getElementById("boot-percent");
         const label = document.getElementById("boot-detail");
         const progress = Number.isFinite(detail.p) ? Math.max(0, Math.min(1, detail.p)) : 0;
-        if (fill) fill.style.width = `${Math.max(3, Math.round(progress * 100))}%`;
+        const value = Math.round(progress * 100);
+        if (fill) fill.style.width = `${Math.max(3, value)}%`;
+        if (meter) meter.setAttribute("aria-valuenow", String(value));
+        if (percent) percent.textContent = `${value}%`;
+        const steps = [...document.querySelectorAll(".boot-steps span")];
+        const currentStep = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+        steps.forEach((step, index) => {
+          const complete = progress >= 1 || index < currentStep;
+          step.classList.toggle("is-complete", complete);
+          step.classList.toggle("is-current", !complete && index === currentStep);
+          if (!complete && index === currentStep) step.setAttribute("aria-current", "step");
+          else step.removeAttribute("aria-current");
+        });
         if (label && detail.label) label.textContent = detail.label.toUpperCase();
       }
 
@@ -428,6 +444,7 @@
       });
       window.addEventListener("hood:route-error", (e) => {
         const label = document.getElementById("boot-detail");
+        loading.classList.add("is-error");
         if (label) label.textContent = `ROUTE LOAD FAILED · ${e.detail?.message || "CHECK CONSOLE"}`;
         post({ type: "HOOD_ROUTE_ERROR", ...e.detail });
       });
@@ -494,7 +511,9 @@
       }, 100);
 
       window.addEventListener("hood:boot-error", (event) => {
-        loading.textContent = "FAILED TO LOAD — " + (event.detail?.message || "CHECK CONSOLE");
+        loading.classList.add("is-error");
+        const label = document.getElementById("boot-detail");
+        if (label) label.textContent = `FAILED TO LOAD · ${event.detail?.message || "CHECK CONSOLE"}`;
         loading.style.opacity = "1";
         loading.style.display = "grid";
         post({ type: "HOOD_GAME_ERROR", message: event.detail?.message });
@@ -504,10 +523,10 @@
     })();
   </script>
 
-  <script src="src/main.js?v=1.0.1" type="module"></script>
+  <script src="src/main.js?v=1.0.4" type="module"></script>
   <script type="module">
     if (!matchMedia('(max-width: 700px), (pointer: coarse)').matches) {
-      import('./music/radio.js?v=1.2.4.4').catch((error) => {
+      import('./music/radio.js?v=1.0.4').catch((error) => {
         console.error('[HOOD] Radio could not load:', error);
       });
     }

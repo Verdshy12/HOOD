@@ -102,46 +102,32 @@ canvas {
   color: #f3f5f6;
 }
 
-.speedometer {
+.tachometer {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  filter: drop-shadow(0 10px 24px rgba(0,0,0,.65));
+  opacity: 1;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,.35));
 }
 
-.speedometer svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.dial-bezel { fill: url(#dial-bezel); }
-.dial-face { fill: url(#dial-face); stroke: #222b30; stroke-width: 1; }
+.tachometer svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.dial-bezel { fill: url(#dial-bezel); opacity: .48; }
+.dial-face { fill: url(#dial-face); fill-opacity: .52; stroke: rgba(220,235,242,.42); stroke-width: 1; }
 .dial-inner-ring { fill: none; stroke: rgba(209,220,224,.18); stroke-width: 1; }
 .speedometer-ticks path { fill: none; stroke-linecap: round; }
-.kph-ticks path { stroke: rgba(243,246,247,.82); }
-.kph-ticks .minor { stroke-width: 1.1; opacity: .8; }
-.kph-ticks .medium { stroke-width: 1.5; }
-.kph-ticks .major { stroke: #f4f6f7; stroke-width: 2; }
-.mph-ticks path { stroke: rgba(176,191,198,.65); }
-.mph-ticks .minor { stroke-width: .8; opacity: .7; }
-.mph-ticks .major { stroke-width: 1.4; }
-.mph-labels {
-  fill: #aeb9be;
-  font: 600 7px Arial, sans-serif;
-  text-anchor: middle;
-  dominant-baseline: middle;
-}
-.kph-labels {
-  fill: #fff;
-  font: 700 11px Arial, sans-serif;
+.tachometer-ticks .minor { stroke: rgba(243,246,247,.55); stroke-width: 1; }
+.tachometer-ticks .medium { stroke: rgba(243,246,247,.75); stroke-width: 1.5; }
+.tachometer-ticks .major { stroke: #f4f6f7; stroke-width: 2; }
+.tachometer-ticks .redline { stroke: #ff6355; }
+.tachometer-labels {
+  fill: rgba(255,255,255,.92);
+  font: 700 12px Arial, sans-serif;
   text-anchor: middle;
   dominant-baseline: middle;
 }
 .dial-unit {
   fill: #aeb9be;
-  font: 600 6px Arial, sans-serif;
-  letter-spacing: 1px;
-  text-anchor: middle;
-}
-.dial-secondary-unit {
-  fill: #aeb9be;
-  font: 600 6px Arial, sans-serif;
+  font: 700 8px Arial, sans-serif;
   letter-spacing: 1px;
   text-anchor: middle;
 }
@@ -149,11 +135,10 @@ canvas {
 .needle-shaft { fill: #f52a32; stroke: #ff8181; stroke-width: .8; filter: url(#needle-glow); }
 .needle-hub-outer { fill: #b6bec2; stroke: #333c40; stroke-width: 2; }
 .needle-hub-inner { fill: #541319; }
-.speedometer[aria-label*="beyond dial range"] .needle-shaft { fill: #ff742f; }
-.speed-lcd { fill: #090e0d; stroke: #626c67; stroke-width: 1; }
+.speed-lcd { fill: #090e0d; fill-opacity: .78; stroke: rgba(170,190,185,.65); stroke-width: 1; }
 .speed-lcd-value {
   fill: #b9e8bc;
-  font: 700 15px/1 monospace;
+  font: 700 18px/1 monospace;
   text-anchor: end;
   dominant-baseline: auto;
   filter: drop-shadow(0 0 2px rgba(132,255,158,.45));
@@ -209,13 +194,16 @@ position: fixed;
 inset: 0;
 display: grid;
 place-items: center;
-background: #05080c;
+padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+background: radial-gradient(ellipse at 50% 42%, rgba(255,179,71,.07), transparent 54%), #05080c;
 color: #20c8ff;
 z-index: 5;
 font-size: 13px;
 letter-spacing: 2px;
 transition: opacity 0.4s ease;
 }
+#loading,
+#loading * { box-sizing: border-box; }
 
 .drive-controls {
   position: fixed;
@@ -1213,17 +1201,20 @@ body .route {
 }
 
 .boot-card {
+  position: relative;
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr) minmax(280px, .9fr);
   align-items: center;
   gap: clamp(24px, 5vw, 64px);
-  width: min(940px, calc(100vw - 40px));
+  width: min(940px, 100%);
   padding: clamp(24px, 5vw, 56px);
   border: 1px solid rgba(255,255,255,.14);
   border-radius: 18px;
   background: linear-gradient(140deg, rgba(18,25,30,.96), rgba(7,11,14,.96));
   box-shadow: 0 28px 90px rgba(0,0,0,.4);
   text-align: left;
+  animation: boot-card-enter .45s ease-out both;
 }
 .boot-label {
   margin: 0 0 18px;
@@ -1245,10 +1236,20 @@ body .route {
   font: 600 10px/1.6 Arial,sans-serif;
   letter-spacing: .13em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
-.boot-meter { height: 3px; margin-top: 21px; overflow: hidden; background: rgba(255,255,255,.14); }
-.boot-meter i { display: block; width: 3%; height: 100%; background: #ffb347; transition: width .35s ease; }
-.boot-steps { display: flex; justify-content: space-between; gap: 8px; margin-top: 11px; color: rgba(255,255,255,.42); font: 700 8px/1 Arial,sans-serif; letter-spacing: .12em; }
+.boot-meter-row { display: flex; align-items: center; gap: 12px; margin-top: 21px; }
+.boot-meter { flex: 1; height: 4px; overflow: hidden; border-radius: 4px; background: rgba(255,255,255,.14); }
+.boot-meter i { display: block; width: 3%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ffb347, #ffe0a6); box-shadow: 0 0 12px rgba(255,179,71,.45); transition: width .35s ease; }
+#boot-percent { min-width: 3ch; color: #fff; font: 700 10px/1 monospace; letter-spacing: .04em; text-align: right; }
+.boot-steps { display: flex; justify-content: space-between; gap: 8px; margin-top: 11px; color: rgba(255,255,255,.38); font: 700 8px/1 Arial,sans-serif; letter-spacing: .12em; }
+.boot-steps span { transition: color .2s ease; }
+.boot-steps .is-complete { color: #6fe6a1; }
+.boot-steps .is-current { color: #ffb347; }
+.is-error .boot-label,
+.is-error #boot-detail { color: #ff8a78; }
+.is-error .boot-copy h2 span { color: #ff8a78; }
+.is-error .boot-meter i { background: #ff6355; box-shadow: 0 0 12px rgba(255,99,85,.4); }
 .boot-map {
   padding: 14px;
   border: 1px solid rgba(255,255,255,.11);
@@ -1266,10 +1267,24 @@ body .route {
 .boot-map .boot-route-line { fill: none; stroke: #ffb347; stroke-width: 2; stroke-dasharray: 14 12; stroke-linecap: round; animation: boot-route-flow 1.4s linear infinite; }
 #boot-selection { padding-top: 8px; border-top: 1px solid rgba(255,255,255,.1); color: #fff; }
 @keyframes boot-route-flow { to { stroke-dashoffset: -40; } }
+@keyframes boot-card-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @media (max-width: 700px) {
   .boot-card { grid-template-columns: 1fr; gap: 20px; padding: 24px; }
   .boot-map { max-width: 500px; width: 100%; margin: 0 auto; }
   .boot-map svg { max-height: 170px; }
+}
+@media (max-height: 560px) and (min-width: 701px) {
+  .boot-card { gap: 24px; padding: 24px; }
+  .boot-map svg { max-height: 150px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-card,
+  .boot-map .boot-route-line,
+  .boot-meter i,
+  .boot-steps span { animation: none; transition: none; }
 }
 
 body.mobile-layout .navigation-map {
@@ -1283,4 +1298,121 @@ body:not(.driving) .drive-controls,
 body:not(.driving) .mobile-drive-controls,
 body:not(.driving) .boost-panel {
   display: none !important;
+}
+
+/* Compact, car-centered driving instruments. */
+body.driving .top {
+  top: calc(10px + var(--sat));
+  left: 50%;
+  width: min(40vw, 360px);
+  transform: translateX(-50%);
+  text-align: center;
+}
+body.driving .top h1 { font-size: clamp(10px, 1.15vw, 14px); }
+body.driving .navigation-map {
+  position: fixed;
+  z-index: 5;
+  top: calc(12px + var(--sat));
+  right: auto;
+  bottom: auto;
+  left: calc(12px + var(--sal));
+  box-sizing: border-box;
+  width: clamp(112px, 12vw, 154px);
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(80, 207, 245, .48);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(9, 23, 31, .45), rgba(4, 11, 16, .78));
+  box-shadow: 0 5px 22px rgba(0,0,0,.32), inset 0 0 22px rgba(32,200,255,.08);
+  backdrop-filter: blur(3px);
+}
+body.driving .navigation-map canvas { width: 100%; height: 100%; }
+body.driving .navigation-map span {
+  z-index: 1;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(224, 245, 251, .72);
+  font-size: 7px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px #000;
+}
+body.driving .hud.speed {
+  z-index: 2;
+  top: auto;
+  right: calc(16px + var(--sar));
+  bottom: calc(16px + var(--sab));
+  left: auto;
+  display: block;
+  width: clamp(86px, 9.5vw, 124px);
+  padding: 0;
+  opacity: 1;
+  pointer-events: none;
+}
+body.driving .hud.speed > .boost-panel {
+  position: relative;
+  inset: auto;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 2px;
+  padding: 4px 7px;
+  border: 1px solid rgba(255,210,63,.38);
+  border-radius: 4px;
+  background: rgba(4,11,16,.48);
+  color: #ffd23f;
+  font-size: 7px;
+  line-height: 1;
+  letter-spacing: .8px;
+}
+body.driving .hud.speed > .boost-panel .boost-heading { margin-bottom: 3px; }
+body.driving .hud.speed > .boost-panel .boost-track {
+  height: 4px;
+  border-color: rgba(255,210,63,.35);
+  background: rgba(10,18,24,.75);
+}
+body.driving .hud.speed > .boost-panel #boostFill {
+  background: linear-gradient(90deg, #ffae00, #ffd23f);
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  body.driving .navigation-map {
+    width: clamp(76px, 14vw, 108px);
+  }
+  body.driving .navigation-map span {
+    top: 8px;
+    font-size: 6px;
+    letter-spacing: .6px;
+  }
+  body.driving .hud.speed {
+    right: calc(10px + var(--sar));
+    bottom: calc(96px + var(--sab));
+    width: clamp(86px, 14vw, 104px);
+    opacity: 1;
+  }
+  body.mobile-layout .drive-controls {
+    top: calc(20px + max(76px, min(14vw, 108px)) + var(--sat));
+    right: auto;
+    bottom: auto;
+    left: calc(12px + var(--sal));
+    flex-direction: column;
+    gap: 5px;
+  }
+  body.mobile-layout .drive-btn {
+    width: 82px;
+    min-height: 34px;
+    padding: 3px 4px;
+    font-size: 9px;
+  }
+  body.mobile-layout .drive-btn small {
+    margin-top: 2px;
+    font-size: 7px;
+    letter-spacing: .3px;
+  }
+  body.mobile-layout #driftBtn { position: static; }
+  body.driving .top {
+    width: min(42vw, 240px);
+  }
+  body.driving .top h1 { font-size: 11px; }
 }
