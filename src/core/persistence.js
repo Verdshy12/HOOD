@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'hood.stats.v1';
-const DEFAULT_CAR_IDS = ['dodge', 'subaru', 'nissan_x_trail'];
+const DEFAULT_CAR_IDS = ['dodge', 'subaru', 'nissan-skyline-r34-gt-r'];
 
 const emptyStats = (carIds) => ({
   version: 1,

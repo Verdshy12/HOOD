@@ -13,7 +13,8 @@ export const VEHICLE_PHYSICS = {
   nissan_x_trail: GTR35_PHYSICS,
   'gtr-35': GTR35_PHYSICS,
 
-  'nissan-skyline-r34-gt-r': SKYLINE_R34_PHYSICS
+  'nissan-skyline-r34-gt-r': SKYLINE_R34_PHYSICS,
+  'nissan-skyline-r34-gt-r-street': SKYLINE_R34_PHYSICS
 };
 
 export function resolveVehiclePhysics(carId, overrides = {}) {

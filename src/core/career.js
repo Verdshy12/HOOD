@@ -1,4 +1,4 @@
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config.js?garage-assets=6';
 
 const STORAGE_KEY = 'hood.career.v1';
 const CAREER_CIRCUIT_ROUTE_IDS = [

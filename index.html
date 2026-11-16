@@ -30,7 +30,7 @@
   <title>HOOD v1.0.1</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="music/radio.css?v=1.0.4">
-  <link rel="stylesheet" href="style.css?v=1.0.4">
+  <link rel="stylesheet" href="style.css?v=1.0.6">
 
   <script type="importmap">
   {
@@ -68,10 +68,10 @@
         <h2>SETTING<br><span>THE GRID.</span></h2>
         <p id="boot-detail">INITIALIZING YOUR SESSION</p>
         <div class="boot-meter-row">
-          <div class="boot-meter" role="progressbar" aria-label="HOOD loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="boot-meter is-indeterminate" role="progressbar" aria-label="HOOD loading progress" aria-valuetext="Preparing game assets">
             <i id="boot-meter-fill"></i>
           </div>
-          <output id="boot-percent" aria-hidden="true">0%</output>
+          <output id="boot-percent" aria-hidden="true">...</output>
         </div>
         <div class="boot-steps"><span>ROUTE</span><span>WORLD</span><span>VEHICLE</span><span>START</span></div>
       </div>
@@ -95,9 +95,9 @@
   <div class="hud route" id="routeHud">
     <div class="route-name" id="routeName">ROUTE</div>
     <div class="route-row"><span>LOCATION</span><strong id="currentLocation">—</strong></div>
-    <div class="route-row"><span>REMAINING</span><strong id="routeLeft">—</strong></div>
-    <div class="route-row"><span>TIME LEFT</span><strong id="routeEta">—</strong></div>
-    <div class="route-track"><div id="routeFill"></div></div>
+    <div class="route-row" id="routeRemainingRow"><span>REMAINING</span><strong id="routeLeft">—</strong></div>
+    <div class="route-row" id="routeEtaRow"><span>EST. FINISH</span><strong id="routeEta">—</strong></div>
+    <div class="route-track" id="routeTrack"><div id="routeFill"></div></div>
     <div id="sprintHud" class="sprint-hud" hidden>
       <div class="sprint-hud-top">
         <span>CHECKPOINT</span>
@@ -118,7 +118,7 @@
         <strong id="circuitLap">START</strong>
       </div>
       <div class="sprint-hud-next">
-        <span>TIME</span>
+        <span>LAP TIME</span>
         <strong id="circuitLapTime">00:00.000</strong>
       </div>
       <div class="sprint-hud-next">
@@ -136,14 +136,25 @@
   <section id="pauseOverlay" class="game-overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
     <div class="overlay-panel">
       <div id="menuHome" class="menu-view">
-        <p class="overlay-kicker">HOOD MENU</p>
+        <p class="overlay-kicker" id="pauseKicker">HOOD MENU</p>
         <h2 id="pauseTitle">Drive paused</h2>
+        <div class="pause-event-summary">
+          <div class="pause-event-heading">
+            <span id="pauseEventMode">SESSION</span>
+            <strong id="pauseTrackName">—</strong>
+            <small id="pauseCarName">—</small>
+          </div>
+          <div class="pause-event-stats">
+            <div><span id="pausePrimaryLabel">DISTANCE</span><strong id="pausePrimaryValue">0.00 KM</strong></div>
+            <div><span id="pauseSecondaryLabel">ACTIVE TIME</span><strong id="pauseSecondaryValue">0:00</strong></div>
+          </div>
+        </div>
         <div class="overlay-actions menu-options">
-          <button id="resumeBtn" class="overlay-primary" type="button">Resume driving</button>
-          <button id="openDashboardBtn" class="overlay-secondary" type="button">Open dashboard</button>
           <button id="goToModeMenuBtn" class="overlay-secondary" type="button">Career menu</button>
+          <button id="openDashboardBtn" class="overlay-secondary" type="button">Open dashboard</button>
           <button id="goToMainMenuBtn" class="overlay-secondary" type="button">Choose game mode</button>
           <button id="openControlsBtn" class="overlay-secondary" type="button">Controls</button>
+          <button id="resumeBtn" class="overlay-primary" type="button">Resume driving</button>
         </div>
       </div>
 
@@ -157,8 +168,8 @@
             <div class="route-row"><span>ACTIVE TIME</span><strong id="sessionTime">0:00</strong></div>
             <div class="route-row"><span>ROUTE</span><strong id="dashboardRoute">—</strong></div>
             <div class="route-row"><span>LOCATION</span><strong id="dashboardLocation">—</strong></div>
-            <div class="route-row"><span>REMAINING</span><strong id="dashboardRemaining">—</strong></div>
-            <div class="route-row"><span>TIME LEFT</span><strong id="dashboardEta">—</strong></div>
+            <div class="route-row" id="dashboardRemainingRow"><span>REMAINING</span><strong id="dashboardRemaining">—</strong></div>
+            <div class="route-row" id="dashboardEtaRow"><span>EST. FINISH</span><strong id="dashboardEta">—</strong></div>
           </div>
           <div class="dashboard-block">
             <h3>VEHICLE</h3>
@@ -276,6 +287,12 @@
         <circle class="dial-bezel" cx="130" cy="130" r="127"/>
         <circle class="dial-face" cx="130" cy="130" r="121"/>
         <circle class="dial-inner-ring" cx="130" cy="130" r="108"/>
+        <g class="nitro-gauge">
+          <path class="nitro-arc-track" d="M63.46 224.92A116 116 0 0 1 63.46 35.08"/>
+          <path id="boostFill" class="nitro-arc-fill" d="M63.46 224.92A116 116 0 0 1 63.46 35.08" stroke-dasharray="222.9 222.9"/>
+          <path class="boost-icon" d="M13.2 1.8 4.8 13h5.8l-.7 9.2L19.2 11h-5.8l-.2-9.2Z" transform="translate(25 211) scale(.72)"/>
+          <text id="boostPercent" class="nitro-percent" x="40" y="244">100%</text>
+        </g>
         <g id="tachometer-ticks" class="speedometer-ticks"></g>
         <g id="tachometer-labels" class="tachometer-labels"></g>
         <text class="dial-unit" x="130" y="91">×1000 RPM</text>
@@ -286,16 +303,10 @@
         <circle class="needle-hub-outer" cx="130" cy="130" r="9"/>
         <circle class="needle-hub-inner" cx="130" cy="130" r="4"/>
         <rect class="speed-lcd" x="77" y="207" width="106" height="31" rx="4"/>
-        <text id="engineRpm" class="speed-lcd-value" x="127" y="229">0850</text>
-        <text class="speed-lcd-unit" x="132" y="228">RPM</text>
+        <text id="compactSpeed" class="speed-lcd-value" x="127" y="229">000</text>
+        <text class="speed-lcd-unit" x="132" y="228">KM/H</text>
         <text id="gear" class="gear-lcd" x="169" y="228">N</text>
       </svg>
-    </div>
-    <div class="boost-panel">
-      <div class="boost-heading">
-        <span>NITRO</span><span id="boostPercent">100%</span>
-      </div>
-      <div class="boost-track"><div id="boostFill"></div></div>
     </div>
   </div>
 
@@ -370,8 +381,8 @@
       const carNames = {
         dodge: "Dodge Challenger R/T",
         subaru: "Subaru Impreza WRX STI",
-        nissan_x_trail: "Nissan X Trail",
-        "nissan-skyline-r34-gt-r": "Nissan Skyline R34 GT-R"
+        "nissan-skyline-r34-gt-r": "Nissan Skyline R34 GT-R",
+        "nissan-skyline-r34-gt-r-street": "Nissan Skyline R34 Street Spec"
       };
       const bootSelection = document.getElementById("boot-selection");
       const bootRoute = routeNames[params.get("route")] || "HOOD ROUTE NETWORK";
@@ -387,11 +398,23 @@
         const meter = document.querySelector(".boot-meter");
         const percent = document.getElementById("boot-percent");
         const label = document.getElementById("boot-detail");
+        const indeterminate = detail.indeterminate === true;
         const progress = Number.isFinite(detail.p) ? Math.max(0, Math.min(1, detail.p)) : 0;
         const value = Math.round(progress * 100);
-        if (fill) fill.style.width = `${Math.max(3, value)}%`;
-        if (meter) meter.setAttribute("aria-valuenow", String(value));
-        if (percent) percent.textContent = `${value}%`;
+        if (meter) {
+          meter.classList.toggle("is-indeterminate", indeterminate);
+          if (indeterminate) {
+            meter.removeAttribute("aria-valuenow");
+            meter.setAttribute("aria-valuetext", detail.label || "Preparing game assets");
+          } else {
+            meter.setAttribute("aria-valuenow", String(value));
+            meter.removeAttribute("aria-valuetext");
+          }
+        }
+        if (fill && !indeterminate) fill.style.width = `${Math.max(3, value)}%`;
+        if (percent) percent.textContent = indeterminate ? "..." : `${value}%`;
+        if (label && detail.label) label.textContent = detail.label.toUpperCase();
+        if (indeterminate) return;
         const steps = [...document.querySelectorAll(".boot-steps span")];
         const currentStep = Math.min(steps.length - 1, Math.floor(progress * steps.length));
         steps.forEach((step, index) => {
@@ -401,7 +424,20 @@
           if (!complete && index === currentStep) step.setAttribute("aria-current", "step");
           else step.removeAttribute("aria-current");
         });
-        if (label && detail.label) label.textContent = detail.label.toUpperCase();
+      }
+
+      function showBootError(message) {
+        loading.classList.add("is-error");
+        loading.classList.remove("is-indeterminate");
+        const meter = document.querySelector(".boot-meter");
+        if (meter) {
+          meter.removeAttribute("aria-valuenow");
+          meter.setAttribute("aria-valuetext", message);
+        }
+        const percent = document.getElementById("boot-percent");
+        if (percent) percent.textContent = "ERROR";
+        const label = document.getElementById("boot-detail");
+        if (label) label.textContent = message;
       }
 
       function post(message) {
@@ -443,9 +479,7 @@
         post({ type: "HOOD_ROUTE_READY", ...e.detail });
       });
       window.addEventListener("hood:route-error", (e) => {
-        const label = document.getElementById("boot-detail");
-        loading.classList.add("is-error");
-        if (label) label.textContent = `ROUTE LOAD FAILED · ${e.detail?.message || "CHECK CONSOLE"}`;
+        showBootError(`ROUTE LOAD FAILED · ${e.detail?.message || "CHECK CONSOLE"}`);
         post({ type: "HOOD_ROUTE_ERROR", ...e.detail });
       });
 
@@ -511,9 +545,7 @@
       }, 100);
 
       window.addEventListener("hood:boot-error", (event) => {
-        loading.classList.add("is-error");
-        const label = document.getElementById("boot-detail");
-        if (label) label.textContent = `FAILED TO LOAD · ${event.detail?.message || "CHECK CONSOLE"}`;
+        showBootError(`FAILED TO LOAD · ${event.detail?.message || "CHECK CONSOLE"}`);
         loading.style.opacity = "1";
         loading.style.display = "grid";
         post({ type: "HOOD_GAME_ERROR", message: event.detail?.message });
@@ -523,7 +555,7 @@
     })();
   </script>
 
-  <script src="src/main.js?v=1.0.4" type="module"></script>
+  <script src="src/main.js?v=1.0.13" type="module"></script>
   <script type="module">
     if (!matchMedia('(max-width: 700px), (pointer: coarse)').matches) {
       import('./music/radio.js?v=1.0.4').catch((error) => {

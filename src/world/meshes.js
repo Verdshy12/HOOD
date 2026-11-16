@@ -211,13 +211,12 @@ export function buildRoadMesh(roads, options = {}) {
     if (!road.pts || road.pts.length < 4) continue;
 
     const count = road.pts.length / 2;
-    const halfWidth = road.w / 2;
-    const y = 0.02 + (road.rank || 0) * 0.004;
-
     const isKinyanjui = String(road.id) === '4821502';
     const isMurram = isKinyanjui;
     const isSelectedAsphalt =
       !isMurram && belongsToSelectedRoute(road);
+    const halfWidth = road.w / 2 + (isSelectedAsphalt ? 0.8 : 0);
+    const y = 0.02 + (road.rank || 0) * 0.004 + (isSelectedAsphalt ? 0.003 : 0);
 
     const bucket = isMurram
       ? buckets.murram
@@ -430,4 +429,108 @@ export function buildRouteMarkings(route, { cell } = {}) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.setIndex(idx); g.computeVertexNormals();
   return new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }));
+}
+
+export function buildFinishGate(route) {
+  const finish = route.path.pts[route.path.pts.length - 1];
+  const roadWidth = route.w || 12;
+  const span = roadWidth + 4;
+  const halfSpan = span / 2;
+  const frame = new THREE.MeshStandardMaterial({ color: 0x16a8b5, metalness: 0.42, roughness: 0.5 });
+  const support = new THREE.MeshStandardMaterial({ color: 0xf3b632, metalness: 0.12, roughness: 0.66 });
+  const truss = new THREE.MeshStandardMaterial({ color: 0x26343b, metalness: 0.22, roughness: 0.7 });
+  const banner = new THREE.MeshStandardMaterial({ color: 0x111a20, metalness: 0.15, roughness: 0.58 });
+  const partsByMaterial = new Map();
+  const gate = new THREE.Group();
+  gate.name = 'HOOD_FinishGate';
+  gate.position.set(finish.x, 0, finish.z);
+  gate.rotation.y = -finish.psi;
+
+  const addPart = (part) => {
+    const parts = partsByMaterial.get(part.userData.material) || [];
+    parts.push(part);
+    partsByMaterial.set(part.userData.material, parts);
+  };
+  const addBeam = (startX, startY, endX, endY, z, thickness, material) => {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const beam = box(
+      Math.hypot(dx, dy),
+      thickness,
+      0.16,
+      material,
+      (startX + endX) / 2,
+      (startY + endY) / 2,
+      z
+    );
+    beam.rotation.z = Math.atan2(dy, dx);
+    addPart(beam);
+  };
+
+  for (const x of [-halfSpan, halfSpan]) {
+    addPart(box(0.52, 5.6, 0.62, support, x, 2.8, 0));
+  }
+  addPart(box(span + 0.8, 0.36, 1.15, frame, 0, 5.75, 0));
+  addPart(box(span, 0.2, 0.62, support, 0, 4.65, 0));
+  addPart(box(span * 0.48, 0.82, 0.22, banner, 0, 3.95, 0.42));
+
+  const trussBottom = 4.78;
+  const trussTop = 5.55;
+  const bayCount = Math.max(4, Math.floor(span / 2));
+  for (const z of [-0.48, 0.48]) {
+    for (let bay = 0; bay <= bayCount; bay++) {
+      const x = -halfSpan + span * bay / bayCount;
+      addBeam(x, trussBottom, x, trussTop, z, 0.09, truss);
+    }
+    for (let bay = 0; bay < bayCount; bay++) {
+      const x0 = -halfSpan + span * bay / bayCount;
+      const x1 = -halfSpan + span * (bay + 1) / bayCount;
+      if (bay % 2 === 0) {
+        addBeam(x0, trussBottom, x1, trussTop, z, 0.07, support);
+      } else {
+        addBeam(x0, trussTop, x1, trussBottom, z, 0.07, support);
+      }
+    }
+  }
+
+  for (const [index, [material, parts]] of [...partsByMaterial].entries()) {
+    const merged = mergedMesh(parts, material);
+    merged.name = `FinishBridgePart_${index}`;
+    gate.add(merged);
+  }
+
+  const stripeWidth = roadWidth + 0.5;
+  const columns = 16;
+  const rows = 2;
+  const positions = [];
+  const colors = [];
+  const indices = [];
+  const light = new THREE.Color(0xf3eee2);
+  const dark = new THREE.Color(0x171d21);
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const x0 = -stripeWidth / 2 + stripeWidth * column / columns;
+      const x1 = -stripeWidth / 2 + stripeWidth * (column + 1) / columns;
+      const z0 = -0.7 + 1.4 * row / rows;
+      const z1 = -0.7 + 1.4 * (row + 1) / rows;
+      const vertex = positions.length / 3;
+      positions.push(x0, 0.075, z0, x1, 0.075, z0, x0, 0.075, z1, x1, 0.075, z1);
+      const color = (row + column) % 2 ? dark : light;
+      for (let i = 0; i < 4; i++) colors.push(color.r, color.g, color.b);
+      indices.push(vertex, vertex + 2, vertex + 1, vertex + 1, vertex + 2, vertex + 3);
+    }
+  }
+  const checkerGeometry = new THREE.BufferGeometry();
+  checkerGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  checkerGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  checkerGeometry.setIndex(indices);
+  checkerGeometry.computeVertexNormals();
+  const checkerLine = new THREE.Mesh(
+    checkerGeometry,
+    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, toneMapped: false })
+  );
+  checkerLine.name = 'FinishCheckerLine';
+  gate.add(checkerLine);
+
+  return gate;
 }
