@@ -121,6 +121,8 @@ export function createCircuitSession({
     completedLaps: 0,
     currentLap: null,
 
+    startedAt: null,
+    totalTimeMs: null,
     lapStartedAt: null,
     currentLapMs: 0,
     lastLapMs: null,
@@ -161,10 +163,6 @@ export function updateCircuitSession(session, position, timestamp) {
   );
 
   if (crossing !== null) {
-    const previous = session.previousPosition;
-    const before = gateSide(previous, session.gate);
-    const after = gateSide(current, session.gate);
-
     const crossingAt = timestamp -
       (timestamp - (session.previousTimestamp ?? timestamp)) *
       (1 - crossing);
@@ -177,6 +175,7 @@ export function updateCircuitSession(session, position, timestamp) {
         // First crossing starts the event; it is not a completed lap.
         session.status = 'racing';
         session.currentLap = 1;
+        session.startedAt = crossingAt;
         session.lapStartedAt = crossingAt;
         session.currentLapMs = 0;
         session.lastGateAt = crossingAt;
@@ -197,6 +196,7 @@ export function updateCircuitSession(session, position, timestamp) {
             session.status = 'finished';
             session.currentLap = null;
             session.currentLapMs = 0;
+            session.totalTimeMs = crossingAt - session.startedAt;
           } else {
             session.currentLap = session.completedLaps + 1;
             session.lapStartedAt = crossingAt;
@@ -254,6 +254,7 @@ export function getCircuitSnapshot(session) {
     currentLapMs: session.currentLapMs,
     lastLapMs: session.lastLapMs,
     bestLapMs: session.bestLapMs,
+    totalTimeMs: session.totalTimeMs,
     lapTimes: [...session.lapTimes]
   };
 }

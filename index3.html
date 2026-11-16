@@ -113,6 +113,7 @@
       justify-content: center;
       align-items: flex-end;
     }
+    body.mode-selection #title-window { visibility: hidden; }
 
     #hood-title {
       position: relative;
@@ -668,6 +669,7 @@
       color: var(--text);
       font-family: Arial, sans-serif;
     }
+    .screen:not(.active) { display: none !important; }
     .home-screen {
       display: flex;
       flex-direction: column;
@@ -888,16 +890,7 @@
     .route-card-copy { display: flex; align-items: flex-end; justify-content: space-between; gap: 9px; }
     .route-card-copy > span:first-child { min-width: 0; }
     .route-distance { color: var(--accent); font: 800 10px/1 Arial, sans-serif; letter-spacing: .14em; }
-    .garage-preview { position: relative; height: clamp(160px, 26vh, 260px); margin: 0 0 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; background: radial-gradient(ellipse at 50% 70%, rgba(255,179,71,.2), transparent 56%), linear-gradient(180deg, rgba(255,255,255,.055), rgba(0,0,0,.2)); }
-    #garage-preview-canvas { display: block; width: 100%; height: 100%; }
-    .garage-preview-name { position: absolute; left: 13px; bottom: 11px; color: white; font: 800 12px/1.2 Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 2px 8px #000; pointer-events: none; }
-    .garage-preview-status { position: absolute; right: 12px; bottom: 12px; color: rgba(255,255,255,.62); font: 700 8px/1.2 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; pointer-events: none; }
-    .garage-list { display: flex; gap: 8px; min-width: 0; overflow-x: auto; padding: 3px 2px 8px; scrollbar-color: var(--accent) rgba(255,255,255,.08); }
-    .garage-card { flex: 0 0 auto; min-height: 42px; padding: 0 13px; border-radius: 9px; }
-    .garage-card strong { white-space: nowrap; font-size: 10px; }
-    .garage-card small, .garage-card .car-chip { display: none; }
-    .garage-carousel { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; margin-top: 4px; }
-    .garage-carousel .flow-button { min-width: 92px; padding: 0 11px; }
+    .garage-list { display: grid; gap: 8px; min-width: 0; }
     .garage-card.locked { opacity: .42; cursor: not-allowed; }
     .garage-card.locked:hover { transform: none; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.035); }
     .garage-card > span:nth-child(2) { flex: 1; min-width: 0; }
@@ -968,8 +961,275 @@
       .home-stats { gap: 17px; }
       .route-list { grid-template-columns: 1fr; }
       .route-card { min-height: 150px; }
-      .garage-carousel .flow-button { min-width: 72px; padding: 0 7px; font-size: 8px; }
       .flow-header h1 { font-size: 11px; }
+    }
+    .home-menu-panel { display: grid; gap: 10px; }
+    .home-menu-panel[hidden] { display: none; }
+    .home-tabs { display: flex; gap: 1px; }
+    .home-tab {
+      min-width: 150px;
+      min-height: 48px;
+      padding: 0 20px;
+      border: 0;
+      border-radius: 0;
+      color: rgba(255,255,255,.68);
+      background: rgba(12,16,20,.78);
+      font: 800 14px/1 Arial,sans-serif;
+      font-style: italic;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .home-tab[aria-pressed="true"] { color: #fff; background: var(--accent); }
+    .mode-card-button:disabled { opacity: .48; cursor: not-allowed; }
+    @media (max-width: 760px) {
+      .home-menu-panel { grid-template-columns: 1fr; }
+      .home-tab { min-width: 0; flex: 1; }
+    }
+    .flow-screen.picker-fullscreen {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0;
+      background: rgba(8,12,16,.985);
+    }
+    .picker-fullscreen .flow-header {
+      flex: 0 0 auto;
+      width: 100%;
+      max-width: none;
+      min-height: 70px;
+      margin: 0;
+      padding: 12px clamp(18px, 4vw, 60px);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      background: rgba(8,12,16,.96);
+    }
+    .picker-fullscreen .flow-header > div { min-width: 0; }
+    .picker-fullscreen .flow-header h1 {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .picker-fullscreen .flow-layout {
+      flex: 1 1 auto;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+      width: 100%;
+      min-height: 0;
+      margin: 0;
+    }
+    .picker-fullscreen .flow-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-height: none;
+      padding: clamp(12px, 2vh, 24px) clamp(12px, 2vw, 28px);
+      overflow: auto;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .picker-fullscreen .flow-aside,
+    .picker-fullscreen .flow-footer { display: none; }
+    .picker-fullscreen #career-hub-view,
+    .picker-fullscreen #route-view,
+    .picker-fullscreen #garage-view {
+      display: flex;
+      flex: 1 0 auto;
+      flex-direction: column;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .picker-fullscreen #career-hub-view[hidden],
+    .picker-fullscreen #route-view[hidden],
+    .picker-fullscreen #garage-view[hidden] { display: none; }
+    .picker-fullscreen #career-hub-view h2 { margin-bottom: 4px; }
+    .picker-fullscreen #career-hub-view .flow-description { margin-bottom: 10px; }
+    .picker-fullscreen .career-summary { margin: 8px 0; padding: 9px 12px; }
+    .picker-fullscreen .career-unlocks {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: 440px;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .picker-fullscreen .career-unlock-stat { padding: 8px 11px; }
+    .picker-fullscreen .career-car-list { margin-bottom: 10px; }
+    .picker-fullscreen #career-events {
+      flex: 1 1 auto;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+      gap: 8px;
+      align-content: start;
+      max-height: none;
+      padding-right: 0;
+    }
+    .picker-fullscreen .career-event { min-height: 62px; padding: 9px 12px; }
+    .picker-fullscreen .route-list {
+      flex: 1 0 auto;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+      grid-auto-rows: minmax(145px, 1fr);
+      gap: clamp(10px, 1.4vw, 18px);
+      align-content: start;
+    }
+    .picker-fullscreen .route-card { height: auto; min-height: 145px; }
+    .picker-fullscreen .route-card-copy small {
+      display: -webkit-box;
+      overflow: hidden;
+      white-space: normal;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    .picker-fullscreen .route-map { height: auto; min-height: 68px; flex: 1 1 auto; }
+    .picker-fullscreen #garage-view { min-height: 0; }
+    .picker-fullscreen #garage-view h2 { margin-bottom: 3px; }
+    .picker-fullscreen #garage-view .flow-description { margin-bottom: 8px; }
+    .garage-list {
+      position: relative;
+      display: flex;
+      flex: 1 1 0;
+      align-items: stretch;
+      gap: clamp(8px, 1vw, 14px);
+      width: 100%;
+      min-width: 0;
+      min-height: clamp(220px, 42vh, 480px);
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scrollbar-color: var(--accent) rgba(255,255,255,.1);
+      scrollbar-width: thin;
+    }
+    .garage-list::-webkit-scrollbar { height: 7px; }
+    .garage-list::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--accent); }
+    .garage-list::-webkit-scrollbar-track { background: rgba(255,255,255,.1); }
+    .garage-card {
+      position: relative;
+      flex: 0 0 clamp(280px, 30vw, 460px);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      min-width: 0;
+      height: 100%;
+      min-height: 0;
+      padding: 0;
+      border-radius: 13px;
+      overflow: hidden;
+      scroll-snap-align: start;
+    }
+    .garage-card.selected {
+      border-color: var(--accent);
+      background: linear-gradient(160deg, rgba(255,179,71,.16), rgba(255,255,255,.035));
+      box-shadow: inset 0 0 0 1px rgba(255,179,71,.18);
+    }
+    .garage-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .garage-car-preview {
+      display: block;
+      width: 100%;
+      height: clamp(145px, 24vh, 220px);
+      min-height: 0;
+      flex: 0 0 auto;
+      border-radius: 0;
+      object-fit: contain;
+      object-position: center;
+      background: linear-gradient(180deg, #5b503e, #1b1a18);
+    }
+    .garage-card-copy, .garage-card-status, .garage-preview-status { position: relative; z-index: 2; }
+    .garage-preview-status { position: absolute; }
+    .garage-preview-status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: rgba(255,255,255,.62);
+      font: 700 7px/1 Arial, sans-serif;
+      letter-spacing: .1em;
+      pointer-events: none;
+    }
+    .garage-card-copy {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      min-width: 0;
+      padding: 12px 14px 0;
+    }
+    .garage-card-copy > span:first-child { min-width: 0; }
+    .garage-card strong { overflow-wrap: anywhere; font-size: clamp(13px, 1.2vw, 17px); }
+    .garage-card small {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 5px;
+      color: rgba(255,255,255,.57);
+      font: 700 9px/1.3 Arial, sans-serif;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .garage-card-status {
+      flex: 0 0 auto;
+      margin: auto 14px 14px;
+      color: var(--accent);
+      font: 800 9px/1 Arial, sans-serif;
+      letter-spacing: .1em;
+    }
+    .picker-fullscreen .garage-card.locked { opacity: 1; }
+    .garage-card.locked { opacity: .58; }
+    .garage-card.locked:hover { transform: none; }
+    .garage-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 14px;
+    }
+    .garage-scroll-controls { display: flex; align-items: center; gap: 8px; }
+    .garage-scroll-controls > span {
+      color: rgba(255,255,255,.5);
+      font: 700 8px/1 Arial, sans-serif;
+      letter-spacing: .12em;
+    }
+    .garage-scroll-button {
+      display: grid;
+      width: 44px;
+      min-height: 44px;
+      padding: 0;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 9px;
+      color: var(--text);
+      background: rgba(255,255,255,.05);
+      font: 700 22px/1 Arial, sans-serif;
+      cursor: pointer;
+    }
+    .garage-scroll-button:disabled { opacity: .35; cursor: not-allowed; }
+    .garage-actions > #launch-game { min-width: 130px; }
+    @media (max-width: 760px) {
+      .picker-fullscreen .flow-header { min-height: 58px; padding: 8px 12px; }
+      .picker-fullscreen .flow-header h1 { font-size: 10px; letter-spacing: .12em; }
+      .picker-fullscreen .flow-panel { padding: 14px 12px; }
+      .picker-fullscreen .route-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .picker-fullscreen .route-card { min-height: 145px; padding: 10px; }
+      .picker-fullscreen .route-map { height: 68px; }
+      .garage-list { gap: 8px; min-height: clamp(190px, 55vh, 310px); }
+      .garage-card { flex-basis: clamp(220px, 42vw, 300px); height: 100%; min-height: 0; padding: 0; }
+      .garage-card .garage-car-preview { height: clamp(145px, 24vh, 190px); }
+      .garage-card small { font-size: 7px; }
+      .garage-actions > #launch-game { min-width: 100px; }
+    }
+    @media (max-width: 520px) {
+      .picker-fullscreen .route-list { grid-template-columns: 1fr; }
+      .garage-card { flex-basis: min(86vw, 360px); }
+      .picker-fullscreen #garage-view .flow-description { font-size: 10px; }
+    }
+    @media (max-width: 760px) and (orientation: landscape) {
+      .garage-card { flex-basis: clamp(220px, 38vw, 300px); }
+      .garage-card .garage-car-preview { height: clamp(145px, 24vh, 170px); }
+    }
+    body.mobile-layout #setup-screen.picker-fullscreen {
+      width: 100%;
+      height: 100%;
+      padding: 0;
     }
   </style>
   <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
@@ -987,41 +1247,54 @@
 
     <div id="ui-shell">
       <section id="intro-screen" class="screen home-screen active" aria-label="HOOD main menu">
-      <!--  <header class="hood-bar">
+        <header class="hood-bar">
           <div class="hood-brand">
-            <img src="Files/splash/novatrix.png" alt="">
             <div><strong>HOOD</strong><small>NAIROBI · KENYA</small></div>
           </div>
-          <div class="world-status"><i aria-hidden="true"></i> WORLD READY</div>
-        </header> -->
+          <div class="world-status"><i aria-hidden="true"></i><span>WORLD READY</span></div>
+        </header>
         <div class="home-grid">
           <div class="home-hero">
-            <p class="micro-label">THE STREETS ARE YOURS</p>
-            <h2><span>DRIVE</span><br>KWA HOOD.</h2>
-            <p>Build your name & discover Kenya's streets.</p>
+            <p class="micro-label">NAIROBI · KENYA</p>
+            <h2><span>READY TO</span><br>DRIVE.</h2>
+            <p>Choose your next race, then take in the streets and circuits of HOOD.</p>
             <div class="home-stats">
-              <div><strong>10</strong><span>CLOSED CIRCUITS</span></div>
+              <div><strong>03</strong><span>EVENT TYPES</span></div>
               <div><strong id="home-garage-count">00</strong><span>GARAGE CARS</span></div>
-              <div><strong>19</strong><span>CAREER EVENTS</span></div>
+              <div><strong>02</strong><span>LIVE CITIES</span></div>
             </div>
           </div>
-          <nav class="mode-menu" aria-label="Choose a game mode">
-            <p class="micro-label">CHOOSE YOUR EXPERIENCE</p>
-            <button class="mode-card-button" type="button" data-mode-choice="career">
-              <span class="mode-index">01</span><span class="mode-copy"><strong>Career mode</strong><small>Build a profile. Clear events and earn cars.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
-            </button>
-            <button class="mode-card-button" type="button" data-mode-choice="circuit">
-              <span class="mode-index">02</span><span class="mode-copy"><strong>Circuit mode</strong><small>Race ten Nairobi and Mombasa circuits with one to five laps.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
-            </button>
-            <button class="mode-card-button" type="button" data-mode-choice="sprint">
-              <span class="mode-index">03</span><span class="mode-copy"><strong>Sprint mode</strong><small>Hit the checkpoints. Own the clock.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
-            </button>
-            <button class="mode-card-button" type="button" data-mode-choice="free-drive">
-              <span class="mode-index">04</span><span class="mode-copy"><strong>Free Drive</strong><small>Explore Nairobi or Mombasa at your own pace.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
-            </button>
+          <nav class="mode-menu" aria-label="Race and event options">
+            <section id="homeRacePanel" class="home-menu-panel" aria-label="Race">
+              <p class="micro-label">RACE</p>
+              <button class="mode-card-button" type="button" data-mode-choice="free-drive">
+                <span class="mode-index">01</span><span class="mode-copy"><strong>Free Drive</strong><small>Explore Nairobi or Mombasa at your own pace.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+              </button>
+              <button class="mode-card-button" type="button" disabled>
+                <span class="mode-index">02</span><span class="mode-copy"><strong>Multiplayer</strong><small>Coming later · race against other drivers.</small></span><span class="mode-arrow" aria-hidden="true">···</span>
+              </button>
+            </section>
+            <section id="homeEventsPanel" class="home-menu-panel" aria-label="Events" hidden>
+              <p class="micro-label">EVENTS</p>
+              <button class="mode-card-button" type="button" data-mode-choice="career">
+                <span class="mode-index">01</span><span class="mode-copy"><strong>Career</strong><small>Build a profile, clear events and unlock cars.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+              </button>
+              <button class="mode-card-button" type="button" data-mode-choice="sprint">
+                <span class="mode-index">02</span><span class="mode-copy"><strong>Sprint</strong><small>Hit every checkpoint. Own the clock.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+              </button>
+              <button class="mode-card-button" type="button" data-mode-choice="circuit">
+                <span class="mode-index">03</span><span class="mode-copy"><strong>Circuit</strong><small>Race one to five laps around closed circuits.</small></span><span class="mode-arrow" aria-hidden="true">↗</span>
+              </button>
+            </section>
           </nav>
         </div>
-        <footer class="home-footer"><!--<span>ANEMOIA PRESENTS · HOOD</span>--><span>HOOD NI YETU</span></footer>
+        <footer class="home-footer">
+          <nav class="home-tabs" aria-label="Main menu">
+            <button id="homeRaceTab" class="home-tab" type="button" aria-pressed="true" aria-controls="homeRacePanel">RACE</button>
+            <button id="homeEventsTab" class="home-tab" type="button" aria-pressed="false" aria-controls="homeEventsPanel">EVENTS</button>
+          </nav>
+          <span>HOOD NI YETU</span>
+        </footer>
       </section>
 
       <section id="setup-screen" class="screen flow-screen" aria-label="Game setup">
@@ -1087,14 +1360,13 @@
               <p class="flow-kicker">SHARED GARAGE · VEHICLE SELECTION</p>
               <h2>Choose Car</h2>
               <p id="garage-description" class="flow-description">Pick a car for the selected route.</p>
-              <div class="garage-preview">
-                <canvas id="garage-preview-canvas" aria-label="Selected vehicle preview"></canvas>
-                <span id="garage-preview-name" class="garage-preview-name">Choose a car</span>
-                <span id="garage-preview-status" class="garage-preview-status" aria-live="polite"></span>
-              </div>
-              <div class="garage-carousel">
-                <button id="garage-back" class="flow-button secondary" type="button">BACK</button>
-                <div id="garage-list" class="garage-list"></div>
+              <div id="garage-list" class="garage-list" aria-label="Six car choices; scroll horizontally to browse" tabindex="0"></div>
+              <div class="garage-actions">
+                <div class="garage-scroll-controls" role="group" aria-label="Browse cars">
+                  <button id="garage-scroll-left" class="garage-scroll-button" type="button" aria-label="Scroll cars left" aria-controls="garage-list" disabled>‹</button>
+                  <span>SCROLL TO BROWSE</span>
+                  <button id="garage-scroll-right" class="garage-scroll-button" type="button" aria-label="Scroll cars right" aria-controls="garage-list" disabled>›</button>
+                </div>
                 <button id="launch-game" class="flow-button" type="button" disabled>NEXT</button>
               </div>
             </section>
@@ -1153,8 +1425,8 @@
   </main>
 
   <script type="module">
-    import { CAREER_CIRCUIT_EVENTS, createCareerStore } from './src/core/career.js';
-    import { CONFIG as GAME_CONFIG } from './src/config.js';
+    import { CAREER_CIRCUIT_EVENTS, createCareerStore } from './src/core/career.js?garage-assets=6';
+    import { CONFIG as GAME_CONFIG } from './src/config.js?garage-assets=6';
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -1200,6 +1472,7 @@
       id,
       name: car.name || id,
       model: car.model,
+      previewImage: car.previewImage,
       type: car.type || 'CUSTOM PROFILE',
       unlockAt: car.careerUnlockAt ?? 0,
       initials: car.initials || car.name?.slice(0, 3).toUpperCase() || 'CAR',
@@ -1228,8 +1501,20 @@
       loadingScreen.hidden = name !== 'loading';
     }
 
+    function setHomeMenu(menu) {
+      const raceSelected = menu === 'race';
+      document.getElementById('homeRacePanel').hidden = !raceSelected;
+      document.getElementById('homeEventsPanel').hidden = raceSelected;
+      document.getElementById('homeRaceTab').setAttribute('aria-pressed', String(raceSelected));
+      document.getElementById('homeEventsTab').setAttribute('aria-pressed', String(!raceSelected));
+    }
+
     function setFlowPage(page) {
       currentPage = page;
+      setupScreen.classList.toggle(
+        'picker-fullscreen',
+        page === 'career-hub' || page === 'routes' || page === 'garage'
+      );
       const activeView = { profiles: 'profile', routes: 'route' }[page] || page;
       for (const id of ['profile', 'career-hub', 'route', 'garage']) {
         document.getElementById(`${id}-view`).hidden = id !== activeView;
@@ -1243,7 +1528,7 @@
               : 'CIRCUIT MODE',
           'ROUTE SELECTION'
         ],
-        garage: ['SHARED GARAGE', 'VEHICLE SELECTION']
+        garage: [selectedRoute?.name || 'SHARED GARAGE', 'GARAGE · VEHICLE SELECTION']
       };
       const labels = headings[page] || headings.profiles;
       document.getElementById('flow-heading').textContent = labels[0];
@@ -1593,13 +1878,6 @@
       }
     }
 
-    function updateAsideRoute(route) {
-      if (!route) return;
-      document.getElementById('aside-title').textContent = route.name;
-      document.getElementById('aside-copy').textContent = `${route.detail} · ${route.distance}.`;
-      renderRouteMap(document.getElementById('aside-route-map'), route.pts);
-    }
-
     function renderRoutes() {
       const list = document.getElementById('route-list');
       list.replaceChildren();
@@ -1614,7 +1892,7 @@
       document.getElementById('route-description').textContent = selectedMode === 'circuit'
         ? 'Choose a route and race from one to five laps.'
         : selectedMode === 'sprint'
-          ? 'Choose a sprint route. Follow the route preview and clear each checkpoint.'
+          ? 'Choose a sprint route, then clear each checkpoint.'
         : selectedMode === 'free-drive'
           ? 'Choose an area. Mombasa Island and Nyali are open for you to explore.'
           : 'Choose any live road route for your circuit session.';
@@ -1650,20 +1928,14 @@
         });
         list.append(button);
       }
-      if (routes.length) updateAsideRoute(routes[0]);
     }
 
     function openGarage(fromPage) {
       returnPage = fromPage;
       setFlowPage('garage');
       renderGarage();
-      requestAnimationFrame(resizeGaragePreview);
       document.getElementById('garage-description').textContent =
-        `${selectedRoute.name} · ${selectedRoute.detail}. Choose a vehicle for this session.`;
-      document.getElementById('aside-caption').textContent = 'GARAGE';
-      updateAsideRoute(selectedRoute);
-      document.getElementById('aside-copy').textContent =
-        `${selectedRoute.detail} · ${selectedRoute.distance}. Your selected vehicle will load into this route.`;
+        `Choose a vehicle for ${selectedRoute.name}. The selected car will load into your session after you continue.`;
     }
 
     function renderGarage() {
@@ -1678,23 +1950,81 @@
         button.type = 'button';
         button.className = `garage-card${car.id === selectedCar ? ' selected' : ''}${unlocked ? '' : ' locked'}`;
         button.disabled = !unlocked;
+        button.setAttribute('aria-pressed', String(car.id === selectedCar));
+        button.dataset.carId = car.id;
+        const previewImage = document.createElement('img');
+        previewImage.className = 'garage-car-preview';
+        previewImage.src = car.previewImage;
+        previewImage.alt = `${car.name} preview`;
+        previewImage.loading = 'eager';
+        previewImage.decoding = 'async';
+        const previewStatus = document.createElement('span');
+        previewStatus.className = 'garage-preview-status';
+        previewStatus.setAttribute('aria-live', 'polite');
+        previewStatus.textContent = 'LOADING IMAGE';
+        previewImage.addEventListener('load', () => { previewStatus.textContent = ''; }, { once: true });
+        previewImage.addEventListener('error', () => {
+          previewStatus.textContent = 'IMAGE UNAVAILABLE';
+          console.error(`[HOOD] Vehicle preview image could not load: ${car.previewImage}`);
+        }, { once: true });
         const name = document.createElement('strong');
         name.textContent = car.name;
+        const type = document.createElement('small');
+        type.textContent = car.type;
+        const details = document.createElement('span');
+        details.className = 'garage-card-copy';
+        const description = document.createElement('span');
+        description.append(name, type);
+        details.append(description);
         button.setAttribute('aria-label', unlocked
           ? `Select ${car.name}`
           : `${car.name}, locked until event ${car.unlockAt}`);
-        button.append(name);
+        const state = document.createElement('span');
+        state.className = 'garage-card-status';
+        button.append(previewImage, previewStatus, details, state);
         if (unlocked) button.addEventListener('click', () => {
           selectedCar = car.id;
-          renderGarage();
+          updateGarageSelection();
         });
         list.append(button);
       }
-      const selected = cars.find((car) => car.id === selectedCar);
-      document.getElementById('garage-preview-name').textContent = selected?.name || 'No available car';
-      if (selected) updateGaragePreview(selected);
+      updateGarageSelection();
+      updateGarageScrollControls();
+    }
+
+    function updateGarageSelection() {
+      const progress = selectedMode === 'career' ? profileProgress() : null;
+      for (const button of document.querySelectorAll('#garage-list .garage-card')) {
+        const car = cars.find((candidate) => candidate.id === button.dataset.carId);
+        if (!car) continue;
+        const selected = car.id === selectedCar;
+        const unlocked = !progress || careerStore.isCarUnlocked(progress.id, car.id);
+        button.classList.toggle('selected', selected);
+        button.setAttribute('aria-pressed', String(selected));
+        button.querySelector('.garage-card-status').textContent = !unlocked
+          ? `LOCKED · ${car.unlockAt}`
+          : selected ? 'SELECTED' : 'SELECT';
+      }
       document.getElementById('launch-game').disabled = !selectedCar;
       document.getElementById('launch-game').textContent = 'NEXT';
+    }
+
+    function updateGarageScrollControls() {
+      const list = document.getElementById('garage-list');
+      const maxScroll = Math.max(0, list.scrollWidth - list.clientWidth);
+      document.getElementById('garage-scroll-left').disabled =
+        maxScroll <= 1 || list.scrollLeft <= 1;
+      document.getElementById('garage-scroll-right').disabled =
+        maxScroll <= 1 || list.scrollLeft >= maxScroll - 1;
+    }
+
+    function scrollGarage(direction) {
+      const list = document.getElementById('garage-list');
+      list.scrollBy({
+        left: direction * Math.max(list.clientWidth * 0.8, 200),
+        behavior: 'auto'
+      });
+      updateGarageScrollControls();
     }
 
     function launchGame() {
@@ -1726,6 +2056,9 @@
     document.querySelectorAll('[data-mode-choice]').forEach((button) => {
       button.addEventListener('click', () => openMode(button.dataset.modeChoice));
     });
+    document.getElementById('homeRaceTab').addEventListener('click', () => setHomeMenu('race'));
+    document.getElementById('homeEventsTab').addEventListener('click', () => setHomeMenu('events'));
+    setHomeMenu('race');
     document.getElementById('flowBackBtn').addEventListener('click', () => {
       if (currentPage === 'garage') {
         if (returnPage === 'career-hub') renderCareerHub();
@@ -1736,10 +2069,6 @@
       } else {
         setScreen('intro');
       }
-    });
-    document.getElementById('garage-back').addEventListener('click', () => {
-      if (returnPage === 'career-hub') renderCareerHub();
-      setFlowPage(returnPage);
     });
     document.getElementById('show-create-profile').addEventListener('click', () => {
       const form = document.getElementById('create-profile-form');
@@ -1770,6 +2099,10 @@
       continueCareer(selectedProfileId);
     });
     document.getElementById('launch-game').addEventListener('click', launchGame);
+    document.getElementById('garage-scroll-left').addEventListener('click', () => scrollGarage(-1));
+    document.getElementById('garage-scroll-right').addEventListener('click', () => scrollGarage(1));
+    document.getElementById('garage-list').addEventListener('scroll', updateGarageScrollControls, { passive: true });
+    window.addEventListener('resize', updateGarageScrollControls);
     window.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && currentScreen === 'setup') {
         event.preventDefault();
@@ -1941,108 +2274,6 @@
       b.getSize(s);
       return { b, s };
     };
-    let garagePreviewRenderer = null;
-    let garagePreviewScene = null;
-    let garagePreviewCamera = null;
-    let garagePreviewRoot = null;
-    let garagePreviewToken = 0;
-
-    function resizeGaragePreview() {
-      if (!garagePreviewRenderer) return;
-      const canvas = garagePreviewRenderer.domElement;
-      const width = Math.max(1, canvas.clientWidth);
-      const height = Math.max(1, canvas.clientHeight);
-      garagePreviewRenderer.setSize(width, height, false);
-      garagePreviewCamera.aspect = width / height;
-      garagePreviewCamera.updateProjectionMatrix();
-      garagePreviewRenderer.render(garagePreviewScene, garagePreviewCamera);
-    }
-
-    function updateGaragePreview(car) {
-      const status = document.getElementById('garage-preview-status');
-      const token = ++garagePreviewToken;
-      try {
-        if (!garagePreviewRenderer) {
-          const canvas = document.getElementById('garage-preview-canvas');
-          garagePreviewRenderer = new THREE.WebGLRenderer({
-            canvas,
-            alpha: true,
-            antialias: true,
-            powerPreference: 'low-power'
-          });
-          garagePreviewRenderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-          garagePreviewRenderer.setClearColor(0x000000, 0);
-          garagePreviewScene = new THREE.Scene();
-          garagePreviewCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-          garagePreviewCamera.position.set(5.5, 3.2, 6.8);
-          garagePreviewCamera.lookAt(0, 0.7, 0);
-          garagePreviewScene.add(new THREE.HemisphereLight(0xffe7cc, 0x18202a, 2));
-          const keyLight = new THREE.DirectionalLight(0xffffff, 3);
-          keyLight.position.set(-4, 8, 6);
-          garagePreviewScene.add(keyLight);
-          const rimLight = new THREE.DirectionalLight(0xffa347, 1.6);
-          rimLight.position.set(5, 3, -5);
-          garagePreviewScene.add(rimLight);
-          window.addEventListener('resize', resizeGaragePreview);
-        }
-      } catch (error) {
-        console.error('[HOOD] Vehicle preview could not be initialized:', error);
-        status.textContent = 'PREVIEW UNAVAILABLE';
-        return;
-      }
-
-      status.textContent = 'LOADING VEHICLE';
-      if (garagePreviewRoot) {
-        garagePreviewScene.remove(garagePreviewRoot);
-        garagePreviewRoot = null;
-      }
-      loader.load(
-        car.model,
-        (gltf) => {
-          if (token !== garagePreviewToken) return;
-          const model = gltf.scene;
-          const { b, s } = sizeOf(model);
-          const longest = Math.max(s.x, s.y, s.z);
-          if (!Number.isFinite(longest) || longest <= 0) {
-            status.textContent = 'PREVIEW UNAVAILABLE';
-            console.error(`[HOOD] Vehicle model ${car.model} has no measurable geometry.`);
-            return;
-          }
-          model.scale.multiplyScalar(4.4 / longest);
-          const bounds = sizeOf(model).b;
-          model.position.x -= (bounds.min.x + bounds.max.x) / 2;
-          model.position.y -= bounds.min.y;
-          model.position.z -= (bounds.min.z + bounds.max.z) / 2;
-          model.rotation.y = Math.PI;
-          if (car.bodyColor && Array.isArray(GAME_CONFIG.cars[car.id].paintMaterials)) {
-            const paintNames = new Set(GAME_CONFIG.cars[car.id].paintMaterials);
-            model.traverse((object) => {
-              if (!object.isMesh) return;
-              const paint = (material) => {
-                if (!paintNames.has(material.name)) return material;
-                const variant = material.clone();
-                variant.color.set(car.bodyColor);
-                variant.needsUpdate = true;
-                return variant;
-              };
-              object.material = Array.isArray(object.material)
-                ? object.material.map(paint)
-                : paint(object.material);
-            });
-          }
-          garagePreviewRoot = model;
-          garagePreviewScene.add(model);
-          status.textContent = 'VEHICLE PREVIEW';
-          resizeGaragePreview();
-        },
-        undefined,
-        (error) => {
-          if (token !== garagePreviewToken) return;
-          console.error(`[HOOD] Vehicle preview could not load ${car.model}:`, error);
-          status.textContent = 'PREVIEW UNAVAILABLE';
-        }
-      );
-    }
 
     function prepareModel(model, animations) {
       const o = sizeOf(model), longest = Math.max(o.s.x, o.s.y, o.s.z);
@@ -2157,25 +2388,29 @@
     layout();
     renderer.render(scene, camera);
 
-    loader.load(
-      CONFIG.modelPath,
-      (gltf) => {
-        try {
-          prepareModel(gltf.scene, gltf.animations || []);
-          startSequence();
-        } catch (e) {
-          loading.textContent = 'UNABLE TO LOAD CAR: ' + e.message;
+    if (document.body.classList.contains('mode-selection')) {
+      loading.classList.add('hidden');
+    } else {
+      loader.load(
+        CONFIG.modelPath,
+        (gltf) => {
+          try {
+            prepareModel(gltf.scene, gltf.animations || []);
+            startSequence();
+          } catch (e) {
+            loading.textContent = 'UNABLE TO LOAD CAR: ' + e.message;
+            loading.classList.remove('hidden');
+            console.error(e);
+          }
+        },
+        () => {},
+        (err) => {
+          console.error(err);
+          loading.textContent = 'UNABLE TO LOAD CAR: CHECK MODEL PATH';
           loading.classList.remove('hidden');
-          console.error(e);
         }
-      },
-      () => {},
-      (err) => {
-        console.error(err);
-        loading.textContent = 'UNABLE TO LOAD CAR: CHECK MODEL PATH';
-        loading.classList.remove('hidden');
-      }
-    );
+      );
+    }
   </script>
   <div id="hood-radio"></div>
   <script src="./music/radio.js" type="module"></script>

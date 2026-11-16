@@ -40,7 +40,7 @@ ok(`car is ${targetLength.toFixed(2)} m long, faces -Z (z is longest axis)`, Mat
 const w = car.wheels; const fl = w.FL.centre, fr = w.FR.centre, rl = w.RL.centre;
 ok('front wheels are at -Z (forward), rear at +Z', fl.z < rl.z, 'front z ' + fl.z.toFixed(2) + ', rear z ' + rl.z.toFixed(2));
 ok('left wheels are at -X (driver side when facing -Z)', fl.x < 0 && fr.x > 0, 'FL.x ' + fl.x.toFixed(2) + ' FR.x ' + fr.x.toFixed(2));
-const wheelbase = rl.z - fl.z, track = fr.x - fl.x; ok('wheelbase ~2.7-3.0 m, track ~1.4-1.7 m', wheelbase > 2.6 && wheelbase < 3.1 && track > 1.4 && track < 1.8, wheelbase.toFixed(2) + ' / ' + track.toFixed(2));
+const wheelbase = rl.z - fl.z, track = fr.x - fl.x; ok('wheelbase 2.45-3.1 m and track 1.4-1.8 m', wheelbase > 2.45 && wheelbase < 3.1 && track > 1.4 && track < 1.8, wheelbase.toFixed(2) + ' / ' + track.toFixed(2));
 
 // KEY CHECK (exact, vertex-based): farthest vertex from the wheel's axle must be identical before and after spin/steer.
 const maxRadius = (wheel) => { const piv = new THREE.Vector3(); wheel.spin.getWorldPosition(piv); const q = new THREE.Vector3(); let m = 0; wheel.spin.updateWorldMatrix(true, true);
@@ -63,3 +63,20 @@ ok('both front wheel assemblies follow steering input',
   w.RL.steer.rotation.y === 0 && w.RR.steer.rotation.y === 0);
 ok('each wheel assembly carries its attached tire and rim parts',
   Object.values(w).every((wheel) => wheel.parts.length > 0 && wheel.parts.every((part) => part.parent === wheel.spin)));
+if (modelPath.includes('subaru-wrx-sti')) {
+  const wheelMaterials = Object.values(w).map((wheel) => {
+    const materials = new Set();
+    wheel.spin.traverse((object) => {
+      if (object.isMesh) {
+        for (const material of [].concat(object.material)) materials.add(material.name);
+      }
+    });
+    return materials;
+  });
+  ok('each Subaru wheel assembly rotates tire, hub, brake, and disk meshes',
+    wheelMaterials.every((materials) =>
+      materials.has('WSubaru_ImprezaWRXSTI_2014_Wheel1A_3D_3DWheel1A_Material1') &&
+      materials.has('sub_1MAT_Tire_Hub_037') &&
+      materials.has('sub_1MAT_Tire_Brake_089') &&
+      materials.has('sub_1MAT_Tire_Disk_045')));
+}

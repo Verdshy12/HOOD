@@ -83,6 +83,25 @@ test('counts laps and finishes at the configured lap count', () => {
   assert.equal(result.currentLap, null);
   assert.equal(result.lapTimes.length, 3);
   assert.equal(result.bestLapMs, 20000);
+  assert.equal(result.totalTimeMs, 60000);
+  assert.equal(result.lapTimes.reduce((sum, lapTime) => sum + lapTime, 0), result.totalTimeMs);
+});
+
+test('interpolates lap one and final lap at their actual start-line crossings', () => {
+  const session = createCircuitSession({ route, laps: 3, minLapMs: 5000 });
+  const crossAt = (crossingAt) => {
+    updateCircuitSession(session, { x: -2, z: 0 }, crossingAt - 50);
+    return updateCircuitSession(session, { x: 2, z: 0 }, crossingAt + 50);
+  };
+
+  crossAt(1050);
+  crossAt(21000);
+  crossAt(42000);
+  const result = crossAt(62125);
+
+  assert.deepEqual(result.lapTimes, [19950, 21000, 20125]);
+  assert.equal(result.totalTimeMs, 61075);
+  assert.equal(result.lapTimes.reduce((sum, lapTime) => sum + lapTime, 0), result.totalTimeMs);
 });
 
 test('supports the five-lap event option', () => {

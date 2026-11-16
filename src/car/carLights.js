@@ -4,7 +4,7 @@
 //  * headlights:   a white glow sprite per lamp plus one SpotLight that lights the road
 //  * reverse:      a white glow sprite per lamp
 //
-// Lamp positions are guessed from the car's bounding box. Override them per car in config.js
+// Lamp positions are guessed from the car's bounding box when not set per car in config.js
 // (car space: +x right, +y up, -z forward, origin at the middle of the car on the ground):
 //
 //   lights: {
@@ -54,6 +54,10 @@ export function createCarLights(root, carCfg) {
   const headPos = o.head || pair(0.34 * W, min.y + 0.50 * H, min.z + 0.03);
   const tailPos = o.tail || pair(0.34 * W, min.y + 0.60 * H, max.z - 0.03);
   const revPos = o.reverse || pair(0.20 * W, min.y + 0.52 * H, max.z - 0.02);
+  const headCenter = headPos.reduce(
+    (center, point) => center.add(new THREE.Vector3(...point)),
+    new THREE.Vector3()
+  ).multiplyScalar(1 / headPos.length);
 
   // ---- glow sprites ----
   function sprites(points, color, size) {
@@ -80,14 +84,23 @@ export function createCarLights(root, carCfg) {
   const revSprites = sprites(revPos, 0xffffff, 0.32);
 
   // ---- tail / brake: make the model's red glass glow ----
+  const headRe = o.headMaterial ? new RegExp(o.headMaterial, 'i') : null;
   const tailRe = new RegExp(o.tailMaterial || 'red_glass|taillight|tail_light|tail-light', 'i');
+  const headMats = new Set();
   const tailMats = new Set();
   root.traverse((m) => {
     if (!m.isMesh) return;
     for (const mat of [].concat(m.material)) {
-      if (mat && 'emissive' in mat && tailRe.test(mat.name || '')) tailMats.add(mat);
+      if (!mat || !('emissive' in mat)) continue;
+      if (headRe?.test(mat.name || '')) headMats.add(mat);
+      if (tailRe.test(mat.name || '')) tailMats.add(mat);
     }
   });
+  for (const mat of headMats) {
+    mat.emissive.set(0xfff1d6);
+    mat.emissiveIntensity = 0;
+    mat.needsUpdate = true;
+  }
   for (const mat of tailMats) {
     mat.emissive.set(0xff1a0a);
     mat.emissiveIntensity = 0;
@@ -98,13 +111,13 @@ export function createCarLights(root, carCfg) {
   let spot = null;
   if (o.beam !== false) {
     spot = new THREE.SpotLight(0xfff1d6, 0, o.beamDistance ?? 70, o.beamAngle ?? 0.42, 0.7, 2);
-    spot.position.set(0, headPos[0][1], min.z + 0.1);
-    spot.target.position.set(0, 0, min.z - 20);
+    spot.position.set(0, headCenter.y, headCenter.z - 0.05);
+    spot.target.position.set(0, 0, headCenter.z - 20);
     root.add(spot, spot.target);
   }
   const beamIntensity = o.beamIntensity ?? 250;
 
-  console.log('[HOOD] lights: ' + tailMats.size + ' tail material(s) glow' +
+  console.log('[HOOD] lights: ' + headMats.size + ' head, ' + tailMats.size + ' tail material(s) glow' +
     (tailMats.size ? '' : ' (none matched "' + tailRe.source + '", using sprites only)') +
     ', beam ' + (spot ? 'on' : 'off'));
 
@@ -133,6 +146,7 @@ export function createCarLights(root, carCfg) {
       apply(tailSprites, v.tail, 0.9, 0.7);
       apply(revSprites, v.rev, 0.9);
 
+      for (const mat of headMats) mat.emissiveIntensity = v.head * 2;
       for (const mat of tailMats) mat.emissiveIntensity = v.tail * 2.5;
       if (spot) spot.intensity = v.head * beamIntensity;
     }

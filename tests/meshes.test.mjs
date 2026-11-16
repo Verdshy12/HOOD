@@ -1,5 +1,10 @@
 import fs from 'node:fs'; import * as THREE from 'three';
-import { buildRoadMesh, buildBuildingMesh, buildRouteMarkings } from '../src/world/meshes.js';
+import {
+  buildRoadMesh,
+  buildBuildingMesh,
+  buildRouteMarkings,
+  buildFinishGate
+} from '../src/world/meshes.js';
 import { buildRoute } from '../src/world/routes.js';
 const ok = (n, c, i = '') => { console.log((c ? 'PASS' : 'FAIL') + '  ' + n + (i ? '  [' + i + ']' : '')); if (!c) process.exitCode = 1; };
 const tile = JSON.parse(fs.readFileSync(new URL('../data/tiles/state-house.json', import.meta.url)));
@@ -9,6 +14,17 @@ const tris = (m) => (m.geometry.index ? m.geometry.index.count : m.geometry.attr
 const finite = (g) => g.attributes.position.array.every(Number.isFinite);
 ok('roads: finite geometry', finite(roads.geometry), Math.round(tris(roads)) + ' tris, ' + rt.toFixed(0) + ' ms');
 ok('buildings: finite geometry', finite(blds.geometry), Math.round(tris(blds)) + ' tris, ' + bt.toFixed(0) + ' ms');
+const simpleRoad = { id: 'preview-road', w: 8, rank: 0, pts: [0, 0, 10, 0] };
+const roadRoute = { path: { pts: [{ x: 0, z: 0 }, { x: 10, z: 0 }] } };
+const plainRoadBounds = new THREE.Box3().setFromBufferAttribute(
+  buildRoadMesh([simpleRoad]).geometry.attributes.position
+);
+const selectedRoadBounds = new THREE.Box3().setFromBufferAttribute(
+  buildRoadMesh([simpleRoad], { route: roadRoute }).geometry.attributes.position
+);
+ok('selected asphalt has a small visual shoulder to hide surface seams',
+  Math.abs((selectedRoadBounds.max.z - plainRoadBounds.max.z) - 0.8) < 1e-4
+  && Math.abs((plainRoadBounds.min.z - selectedRoadBounds.min.z) - 0.8) < 1e-4);
 // every road triangle must face UP (+Y) or the road is invisible from above with backface culling
 const g = roads.geometry, P = g.attributes.position, I = g.index; let down = 0;
 for (let i = 0; i < I.count; i += 3) { const a = new THREE.Vector3().fromBufferAttribute(P, I.getX(i)), b = new THREE.Vector3().fromBufferAttribute(P, I.getX(i + 1)), c = new THREE.Vector3().fromBufferAttribute(P, I.getX(i + 2));
@@ -26,4 +42,13 @@ const sprint = buildRoute(routeDefinitions.find((route) => route.id === 'nairobi
 const markings = buildRouteMarkings(sprint);
 const markingY = markings.geometry.attributes.position.array.filter((_, i) => i % 3 === 1);
 ok('route markings no longer contain a tall finish post', Math.max(...markingY) < 1);
+const finishGate = buildFinishGate(sprint);
+const finishPoint = sprint.path.pts[sprint.path.pts.length - 1];
+const finishStripe = finishGate.getObjectByName('FinishCheckerLine');
+finishStripe.geometry.computeBoundingBox();
+ok('race finish preview has an overhead bridge and checkered line at the route end',
+  finishGate.name === 'HOOD_FinishGate'
+  && finishGate.position.distanceTo(new THREE.Vector3(finishPoint.x, 0, finishPoint.z)) < 1e-6
+  && finishGate.children.some((child) => child.name.startsWith('FinishBridgePart_'))
+  && Math.abs(finishStripe.geometry.boundingBox.max.x - finishStripe.geometry.boundingBox.min.x - sprint.w - 0.5) < 1e-3);
 console.log('INFO  whole map = 2 draw calls (roads + buildings)');

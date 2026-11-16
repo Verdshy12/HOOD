@@ -24,6 +24,8 @@ stats.flush();
 const saved = createStatsStore(storage).snapshot();
 ok('valid usage statistics persist per vehicle',
   saved.cars.dodge.distanceM === 120.5 && saved.cars.subaru.activeSeconds === 12);
+ok('default vehicle statistics match the current garage',
+  'nissan-skyline-r34-gt-r' in saved.cars && !('nissan_x_trail' in saved.cars));
 
 const first = stats.recordSprint({ routeId: 'ngara', carId: 'dodge', timeSeconds: 72.4, checkpointsPassed: 4, totalCheckpoints: 4 });
 const slower = stats.recordSprint({ routeId: 'ngara', carId: 'dodge', timeSeconds: 75, checkpointsPassed: 4, totalCheckpoints: 4 });
